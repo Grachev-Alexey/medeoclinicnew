@@ -28,8 +28,15 @@ type Contacts = {
 };
 
 const telHref = (phone: string) => `tel:${phone.replace(/[^\d+]/g, "")}`;
-const mapHref = (address: string) =>
-  `https://yandex.ru/maps/?text=${encodeURIComponent(address)}`;
+
+/** Точные координаты клиники (широта, долгота) — не зависят от текстового адреса. */
+const CLINIC_LAT = 55.606157;
+const CLINIC_LON = 37.659218;
+/** Карточка организации в Яндекс Картах (точное место, отзывы, инфо). */
+const ORG_MAP_URL = "https://yandex.ru/maps/org/medeo/226407459658/";
+/** Маршрут по точным координатам (rtext = широта,долгота). Так маршрут строится
+ *  корректно и на iOS, где приложение Яндекс.Карт не распознаёт текстовый адрес. */
+const ROUTE_URL = `https://yandex.ru/maps/?mode=routes&rtext=~${CLINIC_LAT}%2C${CLINIC_LON}&rtt=auto`;
 
 const directions = [
   {
@@ -89,7 +96,7 @@ export default function ContactsClient({
               <button
                 type="button"
                 onClick={() => go("/")}
-                className="hover:text-[#007d83] transition-colors"
+                className="hover:text-[#005eb8] transition-colors"
                 data-testid="link-breadcrumb-home"
               >
                 Главная
@@ -99,7 +106,7 @@ export default function ContactsClient({
             </nav>
             <div className="grid gap-8 lg:grid-cols-2 lg:items-end">
               <div>
-                <p className="text-[10px] font-extrabold tracking-[0.22em] uppercase text-[#007d83] mb-3">
+                <p className="text-[10px] font-extrabold tracking-[0.22em] uppercase text-[#005eb8] mb-3">
                   Мы на связи
                 </p>
                 <h1 className="font-heading text-3xl lg:text-5xl text-[#0f1c2e] leading-[1.1] tracking-tight">
@@ -115,16 +122,16 @@ export default function ContactsClient({
                 <a
                   href={telHref(primaryPhone)}
                   data-testid="link-contacts-call"
-                  className="inline-flex items-center justify-center gap-2 rounded-full bg-[#007d83] px-7 py-3.5 text-sm font-semibold text-white transition-all hover:bg-[#006970] hover:shadow-lg"
+                  className="inline-flex items-center justify-center gap-2 rounded-full bg-[#005eb8] px-7 py-3.5 text-sm font-semibold text-white transition-all hover:bg-[#004a93] hover:shadow-lg"
                 >
                   <Phone className="h-4 w-4" /> {primaryPhone}
                 </a>
                 <a
-                  href={mapHref(contacts.address)}
+                  href={ROUTE_URL}
                   target="_blank"
                   rel="noopener noreferrer"
                   data-testid="link-contacts-route"
-                  className="inline-flex items-center justify-center gap-2 rounded-full border border-[#007d83]/30 bg-white px-7 py-3.5 text-sm font-semibold text-[#007d83] transition-all hover:border-[#007d83]"
+                  className="inline-flex items-center justify-center gap-2 rounded-full border border-[#005eb8]/30 bg-white px-7 py-3.5 text-sm font-semibold text-[#005eb8] transition-all hover:border-[#005eb8]"
                 >
                   Построить маршрут <ArrowUpRight className="h-4 w-4" />
                 </a>
@@ -139,8 +146,8 @@ export default function ContactsClient({
 
             {/* Address */}
             <div className="rounded-2xl border border-gray-100 bg-white p-6 shadow-sm">
-              <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-[#e8f6f6]">
-                <MapPin className="h-5 w-5 text-[#007d83]" />
+              <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-[#e8f1fc]">
+                <MapPin className="h-5 w-5 text-[#005eb8]" />
               </div>
               <p className="mt-4 text-xs font-semibold uppercase tracking-widest text-gray-400">
                 Адрес
@@ -149,10 +156,10 @@ export default function ContactsClient({
                 {contacts.address}
               </p>
               <a
-                href={mapHref(contacts.address)}
+                href={ORG_MAP_URL}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="mt-3 inline-flex items-center gap-1 text-xs font-medium text-[#007d83] hover:text-[#005f64] transition-colors"
+                className="mt-3 inline-flex items-center gap-1 text-xs font-medium text-[#005eb8] hover:text-[#004a93] transition-colors"
                 data-testid="link-contacts-map"
               >
                 Открыть в Яндекс Картах <ArrowUpRight className="h-3.5 w-3.5" />
@@ -161,8 +168,8 @@ export default function ContactsClient({
 
             {/* Phones */}
             <div className="rounded-2xl border border-gray-100 bg-white p-6 shadow-sm">
-              <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-[#e8f6f6]">
-                <Phone className="h-5 w-5 text-[#007d83]" />
+              <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-[#e8f1fc]">
+                <Phone className="h-5 w-5 text-[#005eb8]" />
               </div>
               <p className="mt-4 text-xs font-semibold uppercase tracking-widest text-gray-400">
                 Телефоны
@@ -173,7 +180,7 @@ export default function ContactsClient({
                     key={phone}
                     href={telHref(phone)}
                     data-testid={`link-contacts-phone-${i}`}
-                    className="text-[15px] font-medium text-[#1a2535] hover:text-[#007d83] transition-colors"
+                    className="text-[15px] font-medium text-[#1a2535] hover:text-[#005eb8] transition-colors"
                   >
                     {phone}
                   </a>
@@ -186,8 +193,8 @@ export default function ContactsClient({
 
             {/* Schedule */}
             <div className="rounded-2xl border border-gray-100 bg-white p-6 shadow-sm">
-              <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-[#e8f6f6]">
-                <Clock className="h-5 w-5 text-[#007d83]" />
+              <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-[#e8f1fc]">
+                <Clock className="h-5 w-5 text-[#005eb8]" />
               </div>
               <p className="mt-4 text-xs font-semibold uppercase tracking-widest text-gray-400">
                 Режим работы
@@ -220,7 +227,7 @@ export default function ContactsClient({
 
             <div className="flex flex-col gap-4">
               <div className="flex items-center gap-3">
-                <span className="h-5 w-1 rounded-full bg-[#007d83]" />
+                <span className="h-5 w-1 rounded-full bg-[#005eb8]" />
                 <h2 className="font-heading text-xl text-[#0f1c2e]">Как добраться</h2>
               </div>
               {directions.map((d) => (
@@ -230,8 +237,8 @@ export default function ContactsClient({
                   data-testid={`card-direction-${d.title}`}
                 >
                   <div className="flex items-start gap-3.5">
-                    <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[#e8f6f6]">
-                      <d.icon className="h-5 w-5 text-[#007d83]" />
+                    <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[#e8f1fc]">
+                      <d.icon className="h-5 w-5 text-[#005eb8]" />
                     </div>
                     <div>
                       <p className="text-[15px] font-medium text-[#0f1c2e]">{d.title}</p>
@@ -248,8 +255,8 @@ export default function ContactsClient({
           {/* Payments */}
           <div className="mt-6 flex flex-col gap-4 rounded-2xl border border-gray-100 bg-white p-6 shadow-sm sm:flex-row sm:items-center sm:gap-6">
             <div className="flex items-center gap-3.5">
-              <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-[#e8f6f6]">
-                <CreditCard className="h-5 w-5 text-[#007d83]" />
+              <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-[#e8f1fc]">
+                <CreditCard className="h-5 w-5 text-[#005eb8]" />
               </div>
               <div>
                 <p className="text-xs font-semibold uppercase tracking-widest text-gray-400">
@@ -268,7 +275,7 @@ export default function ContactsClient({
           </div>
 
           {/* CTA */}
-          <div className="mt-10 rounded-3xl bg-[#e8f6f6] px-6 py-10 text-center lg:px-12 lg:py-14">
+          <div className="mt-10 rounded-3xl bg-[#e8f1fc] px-6 py-10 text-center lg:px-12 lg:py-14">
             <h2 className="font-heading text-2xl lg:text-3xl text-[#0f1c2e]">
               Запишитесь на приём
             </h2>
@@ -280,7 +287,7 @@ export default function ContactsClient({
               <a
                 href={telHref(primaryPhone)}
                 data-testid="button-contacts-call"
-                className="inline-flex items-center gap-2 rounded-full bg-[#007d83] px-7 py-3.5 text-sm font-semibold text-white transition-all hover:bg-[#006970] hover:shadow-lg"
+                className="inline-flex items-center gap-2 rounded-full bg-[#005eb8] px-7 py-3.5 text-sm font-semibold text-white transition-all hover:bg-[#004a93] hover:shadow-lg"
               >
                 <Phone className="h-4 w-4" /> {primaryPhone}
               </a>
@@ -288,7 +295,7 @@ export default function ContactsClient({
                 type="button"
                 onClick={() => go("/patients")}
                 data-testid="button-contacts-patients"
-                className="inline-flex items-center gap-2 rounded-full border border-[#007d83]/30 bg-white px-7 py-3.5 text-sm font-semibold text-[#007d83] transition-all hover:border-[#007d83]"
+                className="inline-flex items-center gap-2 rounded-full border border-[#005eb8]/30 bg-white px-7 py-3.5 text-sm font-semibold text-[#005eb8] transition-all hover:border-[#005eb8]"
               >
                 Как проходит приём <ArrowRight className="h-4 w-4" />
               </button>

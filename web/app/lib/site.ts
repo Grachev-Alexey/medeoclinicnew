@@ -14,6 +14,29 @@ export const SITE_DESCRIPTION =
 
 export const OG_IMAGE = "/image/og-cover.png";
 
+/**
+ * Site-wide default meta keywords. The keywords tag carries little SEO weight
+ * (Google ignores it, Yandex effectively too), but is kept for audit/legacy
+ * completeness. Applied via the root layout, so every page inherits it; detail
+ * pages prepend content-specific terms via `pageKeywords()`.
+ */
+export const BASE_KEYWORDS = [
+  "медицинский центр Москва",
+  "ММЦ Медео",
+  "клиника доказательной медицины",
+  "запись к врачу",
+  "приём врача",
+  "платная клиника Москва",
+  "гинекология",
+  "репродуктология",
+  "педиатрия",
+  "стоматология",
+  "косметология",
+  "УЗИ",
+  "анализы",
+  "консультация врача",
+];
+
 export const absoluteUrl = (path = "/"): string =>
   `${SITE_URL}${path.startsWith("/") ? path : `/${path}`}`;
 

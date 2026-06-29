@@ -18,13 +18,16 @@ import {
   Dumbbell,
   Baby,
   Stethoscope,
+  Eye,
   type LucideIcon,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { BrandMark } from "@/components/BrandMark";
 import { AnimatePresence, motion } from "framer-motion";
 import { useGo } from "../lib/use-go";
 import { directionPath } from "../lib/site";
 import { openSearch } from "./SearchOverlay";
+import { useAccessibility } from "./Accessibility";
 
 type NavLink = { id: string; label: string; href: string; group: string; sortOrder: number };
 type Service = { id: string; name: string; slug?: string | null };
@@ -33,11 +36,12 @@ type Direction = {
   slug: string;
   label: string;
   description?: string;
+  kind?: string;
   services: Service[];
 };
 
 const defaultMainLinks = [
-  { label: "О клинике", href: "#about" },
+  { label: "О клинике", href: "/o-klinike" },
   { label: "Услуги", href: "#services" },
   { label: "Врачи", href: "/vrachi" },
   { label: "Пациентам", href: "/patients" },
@@ -55,13 +59,13 @@ const defaultSecondaryLinks = [
 ];
 
 const accentBySlug: Record<string, string> = {
-  dentistry: "#007d83",
+  dentistry: "#005eb8",
   cosmetology: "#9333ea",
   women: "#d6336c",
   men: "#1e3a5f",
   children: "#22c55e",
 };
-const accentPalette = ["#007d83", "#1e3a5f", "#a03050", "#5b21b6", "#0e7490", "#7c5a0f"];
+const accentPalette = ["#005eb8", "#1e3a5f", "#a03050", "#5b21b6", "#1e72c8", "#7c5a0f"];
 
 const iconBySlug: Record<string, LucideIcon> = {
   dentistry: Smile,
@@ -117,30 +121,15 @@ const megaVariants = {
   exit: { opacity: 0, y: -8, transition: { duration: 0.15, ease: "easeIn" } },
 };
 
-const Logo = ({ size = 34 }: { size?: number }) => (
-  <svg
-    width={size}
-    height={size}
-    viewBox="0 0 60 60"
-    fill="none"
-    stroke="#007d83"
-    strokeWidth="2.8"
-    strokeLinecap="round"
-    strokeLinejoin="round"
-    aria-hidden="true"
-  >
-    <ellipse cx="30" cy="17" rx="8" ry="14" />
-    <ellipse cx="30" cy="43" rx="8" ry="14" />
-    <ellipse cx="17" cy="30" rx="14" ry="8" />
-    <ellipse cx="43" cy="30" rx="14" ry="8" />
-  </svg>
-);
+const Logo = ({ size = 34 }: { size?: number }) => <BrandMark size={size} />;
 
 export const SiteHeader = (): JSX.Element => {
   const [menuOpen, setMenuOpen] = useState(false);
   const [megaOpen, setMegaOpen] = useState(false);
   const [mobileServicesOpen, setMobileServicesOpen] = useState(false);
   const [mobileDirId, setMobileDirId] = useState<string | null>(null);
+  const [phoneOpen, setPhoneOpen] = useState(false);
+  const { enable: enableA11y } = useAccessibility();
   const go = useGo();
 
   const { data: navData = [] } = useQuery<NavLink[]>({ queryKey: ["/api/nav-links"] });
@@ -167,11 +156,15 @@ export const SiteHeader = (): JSX.Element => {
   const navLinks = apiMain.length ? apiMain : defaultMainLinks;
   const secondaryLinks = apiSecondary.length ? apiSecondary : defaultSecondaryLinks;
 
-  const phone = settings?.contacts?.phones?.[0] ?? "+7 (991) 300-95-05";
+  const phones: string[] = settings?.contacts?.phones?.length
+    ? settings.contacts.phones
+    : ["+7 (991) 300-95-05", "+7 (495) 198-05-08"];
+  const phone = phones[0];
   const brandName = settings?.branding?.name ?? "МЕДЕО";
   const brandTagline = settings?.branding?.tagline ?? "МЕДИЦИНСКИЙ ЦЕНТР";
 
   const hasMega = directions.length > 0;
+  const mobileDirections = directions.filter((d) => d.kind === "audience");
 
   useEffect(() => {
     document.body.style.overflow = menuOpen ? "hidden" : "";
@@ -189,6 +182,19 @@ export const SiteHeader = (): JSX.Element => {
     return () => window.removeEventListener("keydown", onKey);
   }, [megaOpen]);
 
+  useEffect(() => {
+    if (menuOpen) setPhoneOpen(false);
+  }, [menuOpen]);
+
+  useEffect(() => {
+    if (!phoneOpen) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setPhoneOpen(false);
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [phoneOpen]);
+
   const close = () => {
     setMenuOpen(false);
     setMobileServicesOpen(false);
@@ -198,7 +204,7 @@ export const SiteHeader = (): JSX.Element => {
   return (
     <>
       <header
-        className="fixed top-0 left-0 right-0 z-50 bg-white border-b border-gray-100 shadow-sm"
+        className="site-header fixed top-0 left-0 right-0 z-50 bg-white border-b border-gray-100 shadow-sm"
         onMouseLeave={() => setMegaOpen(false)}
       >
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
@@ -218,8 +224,8 @@ export const SiteHeader = (): JSX.Element => {
                   {brandName}
                 </span>
                 <span
-                  className="text-[#007d83] text-[8px] uppercase font-medium hidden sm:block"
-                  style={{ letterSpacing: "0.2em" }}
+                  className="text-[#005eb8] text-[9.5px] uppercase font-medium"
+                  style={{ letterSpacing: "0.18em" }}
                 >
                   {brandTagline}
                 </span>
@@ -245,8 +251,8 @@ export const SiteHeader = (): JSX.Element => {
                       aria-controls={services ? "mega-menu" : undefined}
                       className={`relative flex items-center gap-1 rounded-lg px-3 py-2 text-sm transition-colors whitespace-nowrap ${
                         services && megaOpen
-                          ? "text-[#007d83]"
-                          : "text-gray-600 hover:text-[#007d83]"
+                          ? "text-[#005eb8]"
+                          : "text-gray-600 hover:text-[#005eb8]"
                       }`}
                     >
                       {link.label}
@@ -265,16 +271,25 @@ export const SiteHeader = (): JSX.Element => {
 
             {/* Desktop right */}
             <div className="hidden lg:flex items-center gap-3 shrink-0">
-              <a
-                href={telHref(phone)}
-                className="flex items-center gap-1.5 text-sm font-medium text-gray-700 hover:text-[#007d83] transition-colors whitespace-nowrap"
-              >
-                <Phone className="h-3.5 w-3.5" />
-                {phone}
-              </a>
+              <div className="flex items-center gap-2.5">
+                <span className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-[#e8f1fc] text-[#005eb8]">
+                  <Phone className="h-4 w-4" />
+                </span>
+                <div className="flex flex-col leading-snug">
+                  {phones.map((p) => (
+                    <a
+                      key={p}
+                      href={telHref(p)}
+                      className="text-[13px] font-semibold text-[#0f1c2e] hover:text-[#005eb8] transition-colors whitespace-nowrap"
+                    >
+                      {p}
+                    </a>
+                  ))}
+                </div>
+              </div>
               <Button
                 asChild
-                className="rounded-lg bg-[#007d83] hover:bg-[#006970] text-white text-sm px-5 h-9"
+                className="rounded-lg bg-[#005eb8] hover:bg-[#004a93] text-white text-sm px-5 h-9"
               >
                 <a href="#contacts" onClick={(e) => handleNav(e, "#contacts")}>
                   Записаться
@@ -284,10 +299,20 @@ export const SiteHeader = (): JSX.Element => {
                 type="button"
                 onClick={() => openSearch()}
                 data-testid="button-search-desktop"
-                className="flex items-center justify-center h-9 w-9 rounded-lg text-gray-500 hover:text-[#007d83] hover:bg-gray-50 transition-colors"
+                className="flex items-center justify-center h-9 w-9 rounded-lg text-gray-500 hover:text-[#005eb8] hover:bg-gray-50 transition-colors"
                 aria-label="Поиск"
               >
                 <Search className="h-4 w-4" />
+              </button>
+              <button
+                type="button"
+                onClick={enableA11y}
+                data-testid="button-accessibility-desktop"
+                className="flex items-center justify-center h-9 w-9 rounded-lg text-gray-500 hover:text-[#005eb8] hover:bg-gray-50 transition-colors"
+                aria-label="Версия для слабовидящих"
+                title="Версия для слабовидящих"
+              >
+                <Eye className="h-4 w-4" />
               </button>
             </div>
 
@@ -297,22 +322,57 @@ export const SiteHeader = (): JSX.Element => {
                 type="button"
                 onClick={() => openSearch()}
                 data-testid="button-search-mobile"
-                className="flex items-center justify-center h-9 w-9 text-gray-600 hover:text-[#007d83] transition-colors"
+                className="flex items-center justify-center h-9 w-9 text-gray-600 hover:text-[#005eb8] transition-colors"
                 aria-label="Поиск"
               >
                 <Search className="h-5 w-5" />
               </button>
-              <a
-                href={telHref(phone)}
-                className="flex items-center justify-center h-9 w-9 text-[#007d83]"
-                aria-label="Позвонить"
-              >
-                <Phone className="h-5 w-5" />
-              </a>
+              {phones.length > 1 ? (
+                <div className="relative">
+                  <button
+                    type="button"
+                    onClick={() => setPhoneOpen((v) => !v)}
+                    aria-label="Позвонить"
+                    aria-expanded={phoneOpen}
+                    className="flex items-center justify-center h-9 w-9 text-[#005eb8]"
+                  >
+                    <Phone className="h-5 w-5" />
+                  </button>
+                  {phoneOpen && (
+                    <>
+                      <div
+                        className="fixed inset-0 z-40"
+                        onClick={() => setPhoneOpen(false)}
+                      />
+                      <div className="absolute right-0 top-full z-50 mt-1 w-56 rounded-xl border border-gray-100 bg-white p-1.5 shadow-lg">
+                        {phones.map((p) => (
+                          <a
+                            key={p}
+                            href={telHref(p)}
+                            onClick={() => setPhoneOpen(false)}
+                            className="flex items-center gap-2.5 rounded-lg px-3 py-2.5 text-sm font-medium text-[#0f1c2e] hover:bg-[#e8f1fc] hover:text-[#005eb8] transition-colors"
+                          >
+                            <Phone className="h-4 w-4 text-[#005eb8]" />
+                            {p}
+                          </a>
+                        ))}
+                      </div>
+                    </>
+                  )}
+                </div>
+              ) : (
+                <a
+                  href={telHref(phone)}
+                  className="flex items-center justify-center h-9 w-9 text-[#005eb8]"
+                  aria-label="Позвонить"
+                >
+                  <Phone className="h-5 w-5" />
+                </a>
+              )}
               <button
                 type="button"
                 data-testid="button-mobile-menu"
-                className="flex items-center justify-center h-9 w-9 text-gray-600 hover:text-[#007d83] transition-colors"
+                className="flex items-center justify-center h-9 w-9 text-gray-600 hover:text-[#005eb8] transition-colors"
                 onClick={() => setMenuOpen(true)}
                 aria-label="Открыть меню"
               >
@@ -369,9 +429,9 @@ export const SiteHeader = (): JSX.Element => {
                               <li key={s.id}>
                                 {s.slug ? (
                                   <Link
-                                    href={`/uslugi/${s.slug}`}
+                                    href={`/uslugi/${s.slug}?from=${dir.slug}`}
                                     onClick={() => setMegaOpen(false)}
-                                    className="group/svc flex items-center gap-1.5 rounded-md py-1.5 text-[13px] text-gray-500 transition-colors hover:text-[#007d83]"
+                                    className="group/svc flex items-center gap-1.5 rounded-md py-1.5 text-[13px] text-gray-500 transition-colors hover:text-[#005eb8]"
                                     data-testid={`mega-service-${s.slug}`}
                                   >
                                     <span className="transition-transform duration-200 group-hover/svc:translate-x-0.5">
@@ -419,7 +479,7 @@ export const SiteHeader = (): JSX.Element => {
                       onClick={() => setMegaOpen(false)}
                       data-testid="mega-promo"
                       className="group/promo relative overflow-hidden rounded-2xl p-5 text-white transition-transform hover:scale-[1.01]"
-                      style={{ background: "linear-gradient(135deg,#007d83 0%,#00b4bd 100%)" }}
+                      style={{ background: "linear-gradient(135deg,#005eb8 0%,#2f86dd 100%)" }}
                     >
                       <Tag
                         className="pointer-events-none absolute -right-3 -bottom-3 h-24 w-24 text-white/15"
@@ -442,7 +502,7 @@ export const SiteHeader = (): JSX.Element => {
                           key={linkKey(link)}
                           href={link.href}
                           onClick={(e) => handleNav(e, link.href)}
-                          className="flex items-center gap-1.5 py-1.5 text-[13px] text-gray-500 transition-colors hover:text-[#007d83]"
+                          className="flex items-center gap-1.5 py-1.5 text-[13px] text-gray-500 transition-colors hover:text-[#005eb8]"
                           data-testid={`mega-secondary-${link.label}`}
                         >
                           <ChevronRight className="h-3 w-3 text-gray-300" />
@@ -480,6 +540,7 @@ export const SiteHeader = (): JSX.Element => {
               exit="exit"
               className="fixed inset-x-0 top-0 z-[60] lg:hidden flex flex-col bg-white"
               style={{ maxHeight: "100dvh" }}
+              data-lenis-prevent
             >
               {/* Panel header */}
               <div className="flex items-center justify-between px-4 h-14 border-b border-gray-100 shrink-0">
@@ -497,8 +558,8 @@ export const SiteHeader = (): JSX.Element => {
                       {brandName}
                     </span>
                     <span
-                      className="text-[#007d83] text-[8px] uppercase font-medium"
-                      style={{ letterSpacing: "0.2em" }}
+                      className="text-[#005eb8] text-[9.5px] uppercase font-medium"
+                      style={{ letterSpacing: "0.18em" }}
                     >
                       {brandTagline}
                     </span>
@@ -509,7 +570,7 @@ export const SiteHeader = (): JSX.Element => {
                   data-testid="button-mobile-menu-close"
                   onClick={close}
                   whileTap={{ scale: 0.9 }}
-                  className="flex items-center justify-center h-9 w-9 text-gray-500 hover:text-[#007d83] transition-colors"
+                  className="flex items-center justify-center h-9 w-9 text-gray-500 hover:text-[#005eb8] transition-colors"
                   aria-label="Закрыть меню"
                 >
                   <X className="h-5 w-5" />
@@ -529,7 +590,7 @@ export const SiteHeader = (): JSX.Element => {
                             type="button"
                             onClick={() => setMobileServicesOpen((v) => !v)}
                             data-testid="link-mobile-nav-services"
-                            className="flex w-full items-center justify-between py-4 text-xl font-medium text-[#0f1c2e] border-b border-gray-100 transition-colors hover:text-[#007d83]"
+                            className="flex w-full items-center justify-between py-4 text-xl font-medium text-[#0f1c2e] border-b border-gray-100 transition-colors hover:text-[#005eb8]"
                           >
                             {link.label}
                             <ChevronDown
@@ -550,7 +611,7 @@ export const SiteHeader = (): JSX.Element => {
                                 className="overflow-hidden"
                               >
                                 <div className="py-1">
-                                  {directions.map((dir, i) => {
+                                  {mobileDirections.map((dir, i) => {
                                     const accent = accentFor(dir.slug, i);
                                     const Icon = iconFor(dir.slug);
                                     const open = mobileDirId === dir.id;
@@ -608,7 +669,7 @@ export const SiteHeader = (): JSX.Element => {
                                                       <Link
                                                         href={`/uslugi/${s.slug}`}
                                                         onClick={close}
-                                                        className="block py-2 text-sm text-gray-500 transition-colors hover:text-[#007d83]"
+                                                        className="block py-2 text-sm text-gray-500 transition-colors hover:text-[#005eb8]"
                                                         data-testid={`mobile-service-${s.slug}`}
                                                       >
                                                         {s.name}
@@ -642,7 +703,7 @@ export const SiteHeader = (): JSX.Element => {
                         onClick={(e) => handleNav(e, link.href, true)}
                         variants={itemVariants}
                         data-testid={`link-mobile-nav-${link.label}`}
-                        className="flex items-center py-4 text-xl font-medium text-[#0f1c2e] border-b border-gray-100 hover:text-[#007d83] transition-colors"
+                        className="flex items-center py-4 text-xl font-medium text-[#0f1c2e] border-b border-gray-100 hover:text-[#005eb8] transition-colors"
                       >
                         {link.label}
                       </motion.a>
@@ -658,7 +719,7 @@ export const SiteHeader = (): JSX.Element => {
                         key={linkKey(link)}
                         href={link.href}
                         onClick={(e) => handleNav(e, link.href, true)}
-                        className="text-sm text-gray-500 hover:text-[#007d83] transition-colors"
+                        className="text-sm text-gray-500 hover:text-[#005eb8] transition-colors"
                       >
                         {link.label}
                       </a>
@@ -666,17 +727,37 @@ export const SiteHeader = (): JSX.Element => {
                   </div>
 
                   <div className="flex flex-col gap-3 border-t border-gray-100 pt-5 pb-6">
-                    <a href={telHref(phone)} className="text-lg font-semibold text-[#007d83]">
-                      {phone}
-                    </a>
+                    <div className="flex flex-col gap-1">
+                      {phones.map((p) => (
+                        <a
+                          key={p}
+                          href={telHref(p)}
+                          className="text-lg font-semibold text-[#005eb8]"
+                        >
+                          {p}
+                        </a>
+                      ))}
+                    </div>
                     <Button
                       asChild
-                      className="w-full rounded-lg bg-[#007d83] hover:bg-[#006970] text-white h-12 text-base"
+                      className="w-full rounded-lg bg-[#005eb8] hover:bg-[#004a93] text-white h-12 text-base"
                     >
                       <a href="#contacts" onClick={(e) => handleNav(e, "#contacts", true)}>
                         Записаться на приём
                       </a>
                     </Button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        enableA11y();
+                        close();
+                      }}
+                      data-testid="button-accessibility-mobile"
+                      className="flex items-center justify-center gap-2 w-full rounded-lg border border-gray-200 text-[#0f1c2e] hover:text-[#005eb8] hover:border-[#005eb8] h-12 text-base transition-colors"
+                    >
+                      <Eye className="h-4 w-4" />
+                      Версия для слабовидящих
+                    </button>
                   </div>
                 </motion.div>
               </div>

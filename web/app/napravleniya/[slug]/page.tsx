@@ -3,7 +3,7 @@ import { redirect, notFound } from "next/navigation";
 import DirectionClient from "../../_components/DirectionClient";
 import { apiGet } from "../../lib/api";
 import { JsonLd } from "../../_components/JsonLd";
-import { breadcrumbLd, pageOpenGraph } from "../../lib/seo";
+import { breadcrumbLd, pageOpenGraph, pageKeywords } from "../../lib/seo";
 
 // Stomatology & cosmetology have their own dedicated landing pages.
 const LANDING_REDIRECTS: Record<string, string> = {
@@ -40,6 +40,11 @@ export async function generateMetadata({
   return {
     title,
     description,
+    keywords: pageKeywords([
+      dir.label,
+      `${dir.label} Москва`,
+      `${dir.label} цена`,
+    ]),
     alternates: { canonical: path },
     openGraph: pageOpenGraph({ title, description, path }),
   };

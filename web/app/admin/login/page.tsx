@@ -24,7 +24,7 @@ export default function AdminLoginPage() {
     try {
       await apiRequest("POST", "/api/auth/login", { username, password });
       await queryClient.invalidateQueries({ queryKey: ["/api/auth/me"] });
-      router.replace("/admin");
+      router.replace("/admin/doctors");
     } catch {
       toast({ title: "Неверный логин или пароль", variant: "destructive" });
     } finally {

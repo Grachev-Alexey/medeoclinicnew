@@ -1,4 +1,21 @@
-import { SITE_NAME, SITE_URL, OG_IMAGE, absoluteUrl } from "./site";
+import { SITE_NAME, SITE_URL, OG_IMAGE, absoluteUrl, BASE_KEYWORDS } from "./site";
+
+/** Merge page-specific keyword terms with the site-wide base set (deduped). */
+export function pageKeywords(
+  extra: Array<string | undefined | null> = [],
+): string[] {
+  const seen = new Set<string>();
+  const out: string[] = [];
+  for (const kw of [...extra, ...BASE_KEYWORDS]) {
+    const value = (kw ?? "").trim();
+    if (!value) continue;
+    const key = value.toLowerCase();
+    if (seen.has(key)) continue;
+    seen.add(key);
+    out.push(value);
+  }
+  return out;
+}
 
 const DAY_MAP: Record<string, string> = {
   Пн: "Monday",
@@ -79,7 +96,7 @@ export function organizationLd(settings?: any) {
     name: SITE_NAME,
     url: SITE_URL,
     image: absoluteUrl(OG_IMAGE),
-    logo: absoluteUrl("/favicon.png"),
+    logo: absoluteUrl("/favicon-192.png"),
     priceRange: "₽₽",
     areaServed: "Москва",
     medicalSpecialty: ["Gynecologic", "Pediatric", "Urologic"],

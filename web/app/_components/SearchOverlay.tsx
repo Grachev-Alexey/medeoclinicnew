@@ -144,6 +144,7 @@ export function SearchOverlay(): JSX.Element | null {
       role="dialog"
       aria-modal="true"
       aria-label="Поиск по сайту"
+      data-lenis-prevent
     >
       <div
         className="absolute inset-0 bg-[#0f1c2e]/40 backdrop-blur-sm"
@@ -205,12 +206,12 @@ export function SearchOverlay(): JSX.Element | null {
                       onMouseEnter={() => setActive(idx)}
                       data-testid={`search-result-${idx}`}
                       className={`flex w-full items-center gap-3 px-5 py-2.5 text-left transition-colors ${
-                        isActive ? "bg-[#007d83]/8" : "hover:bg-gray-50"
+                        isActive ? "bg-[#005eb8]/8" : "hover:bg-gray-50"
                       }`}
                     >
                       <span
                         className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-lg ${
-                          isActive ? "bg-[#007d83] text-white" : "bg-gray-100 text-gray-500"
+                          isActive ? "bg-[#005eb8] text-white" : "bg-gray-100 text-gray-500"
                         }`}
                       >
                         <Icon className="h-4 w-4" />
@@ -226,7 +227,7 @@ export function SearchOverlay(): JSX.Element | null {
                         )}
                       </span>
                       {isActive && (
-                        <CornerDownLeft className="h-4 w-4 shrink-0 text-[#007d83]" />
+                        <CornerDownLeft className="h-4 w-4 shrink-0 text-[#005eb8]" />
                       )}
                     </button>
                   );

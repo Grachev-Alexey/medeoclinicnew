@@ -1,0 +1,11 @@
+- [Lenis modal scroll](lenis-modal-scroll.md) — overlays/modals/dropdowns need `data-lenis-prevent` or wheel scrolls the page behind them, not the modal.
+- [scrollIntoView window jump](scrollintoview-window-jump.md) — scrollIntoView scrolls the whole window even with block:nearest; center carousel items via container scrollLeft instead.
+- [Light palette rule](light-palette-rule.md) — no dark cards; even full teal-fill+white-text cards count as dark, use light surfaces w/ teal accents
+- [MEDEO data & prod DB](medeo-data-and-prod.md) — two "stats" concepts (DB-backed removed, service-landing hardcoded stays); prod is a separate VPS so schema changes must be replayed there.
+- [Brand color (blue)](brand-color.md) — brand is #005eb8 blue, hardcoded hex (no token) across ~27 files; teal→blue mapping; keep green status badges + navy.
+- [Static image references](static-image-references.md) — /image/* paths live in 3 places (DB rows, hardcoded code, seed files); rename/delete must update all 3. og-cover.png stays PNG.
+- [Service current-direction accent](service-direction-accent.md) — shared service page accent/breadcrumb follows `?from=<dir>` read server-side via searchParams (never useSearchParams — breaks SSR/SEO).
+- [Screenshot browser localStorage](screenshot-browser-localstorage.md) — app_preview browser persists localStorage across calls; flipping an in-code default won't override a stored value — bump the storage key to test instead.
+- [Logo & favicon](logo-favicon.md) — BrandMark SVG is the single source; favicons rasterized from it (sharp needs NODE_PATH), opaque white bg so dark-theme tabs show the blue cross.
+- [Yandex maps routing](yandex-maps-routing.md) — routes need exact coords not text (iOS fails on text); rtext=lat,lon but ll/pt=lon,lat (order differs).
+- [SSR home-section wiring](ssr-home-section-wiring.md) — new DB-backed home block must sync 4 places (page.tsx fetch, HomeClient useQueries key, section useQuery same key) or it's client-only/empty in SSR HTML.

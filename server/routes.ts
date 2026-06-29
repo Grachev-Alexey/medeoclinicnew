@@ -14,12 +14,12 @@ import {
   insertPriceCategorySchema,
   insertPriceItemSchema,
   insertMythSchema,
-  insertReviewSchema,
   insertPromotionSchema,
+  insertStorySchema,
   insertBenefitSchema,
-  insertStatSchema,
   insertNavLinkSchema,
-  insertBookingSchema,
+  type Direction,
+  type PriceItem,
 } from "@shared/schema";
 
 const upload = multer({
@@ -115,48 +115,6 @@ export async function registerRoutes(
     res.json({ message: "ok" });
   });
 
-  /* ------------------------------- Bookings ------------------------------ */
-  const publicBookingSchema = insertBookingSchema
-    .omit({ directionLabel: true })
-    .extend({
-      name: z.string().trim().min(2, "Укажите имя"),
-      phone: z.string().trim().min(5, "Укажите телефон"),
-    });
-
-  // Public: submit an online appointment request (lead)
-  app.post("/api/bookings", async (req, res) => {
-    const data = parseBody(publicBookingSchema, req.body, res);
-    if (!data) return;
-    let directionLabel = "";
-    let directionId = data.directionId ?? null;
-    if (directionId) {
-      const dir = await storage.getDirection(directionId);
-      if (dir) {
-        directionLabel = dir.label;
-      } else {
-        directionId = null;
-      }
-    }
-    const created = await storage.createBooking({ ...data, directionId, directionLabel });
-    res.status(201).json({ id: created.id });
-  });
-
-  // Admin: list / update status / delete bookings
-  app.get("/api/admin/bookings", requireAuth, async (_req, res) => {
-    res.json(await storage.listBookings());
-  });
-  app.patch("/api/admin/bookings/:id", requireAuth, async (req, res) => {
-    const data = parseBody(z.object({ status: z.enum(["new", "processed"]) }), req.body, res);
-    if (!data) return;
-    const updated = await storage.updateBooking(pid(req), data);
-    if (!updated) return res.status(404).json({ message: "Не найдено" });
-    res.json(updated);
-  });
-  app.delete("/api/admin/bookings/:id", requireAuth, async (req, res) => {
-    await storage.deleteBooking(pid(req));
-    res.json({ message: "ok" });
-  });
-
   /* --------------------------- Generic CRUD helper ----------------------- */
   type CrudConfig = {
     path: string;
@@ -220,15 +178,6 @@ export async function registerRoutes(
   });
 
   registerCrud({
-    path: "reviews",
-    schema: insertReviewSchema,
-    list: (a) => storage.listReviews(a),
-    create: (d) => storage.createReview(d),
-    update: (id, d) => storage.updateReview(id, d),
-    remove: (id) => storage.deleteReview(id),
-  });
-
-  registerCrud({
     path: "promotions",
     schema: insertPromotionSchema,
     list: (a) => storage.listPromotions(a),
@@ -238,21 +187,21 @@ export async function registerRoutes(
   });
 
   registerCrud({
+    path: "stories",
+    schema: insertStorySchema,
+    list: (a) => storage.listStories(a),
+    create: (d) => storage.createStory(d),
+    update: (id, d) => storage.updateStory(id, d),
+    remove: (id) => storage.deleteStory(id),
+  });
+
+  registerCrud({
     path: "benefits",
     schema: insertBenefitSchema,
     list: (a) => storage.listBenefits(a),
     create: (d) => storage.createBenefit(d),
     update: (id, d) => storage.updateBenefit(id, d),
     remove: (id) => storage.deleteBenefit(id),
-  });
-
-  registerCrud({
-    path: "stats",
-    schema: insertStatSchema,
-    list: () => storage.listStats(),
-    create: (d) => storage.createStat(d),
-    update: (id, d) => storage.updateStat(id, d),
-    remove: (id) => storage.deleteStat(id),
   });
 
   registerCrud({
@@ -269,10 +218,17 @@ export async function registerRoutes(
   app.get("/api/directions", async (_req, res) => {
     const dirs = await storage.listDirections(true);
     const allServices = await storage.listServices();
+    const links = await storage.listServiceDirections();
+    const dirIdsBySvc = new Map<string, Set<string>>();
+    for (const l of links) {
+      const set = dirIdsBySvc.get(l.serviceId);
+      if (set) set.add(l.directionId);
+      else dirIdsBySvc.set(l.serviceId, new Set([l.directionId]));
+    }
     res.json(
       dirs.map((d) => ({
         ...d,
-        services: allServices.filter((s) => s.directionId === d.id),
+        services: allServices.filter((s) => dirIdsBySvc.get(s.id)?.has(d.id)),
       })),
     );
   });
@@ -280,46 +236,45 @@ export async function registerRoutes(
     const dir = await storage.getDirectionBySlug(pid(req, "slug"));
     if (!dir || !dir.active) return res.status(404).json({ message: "Не найдено" });
     const services = await storage.listServices(dir.id);
-    // Aggregate concrete procedures (price items) so the section page can list
-    // and search them: the direction's own category ∪ each service's category.
-    const catIds: string[] = [];
-    const pushId = (id: string | null | undefined) => {
-      if (id && !catIds.includes(id)) catIds.push(id);
-    };
-    pushId(dir.priceCategoryId);
-    for (const s of services) pushId(s.priceCategoryId);
-    let priceGroups: Array<{
-      id: string;
-      name: string;
-      items: { id: string; name: string; price: string; note: string }[];
-    }> = [];
-    if (catIds.length) {
-      const cats = await storage.listPriceCategories();
-      const catById = new Map(cats.map((c) => [c.id, c] as const));
-      const allItems = await storage.listPriceItems();
-      priceGroups = catIds
-        .map((id) => {
-          const c = catById.get(id);
-          if (!c) return null;
-          return {
-            id: c.id,
-            name: c.name,
-            items: allItems
-              .filter((i) => i.categoryId === id)
-              .map((i) => ({ id: i.id, name: i.name, price: i.price, note: i.note })),
-          };
-        })
-        .filter((g): g is NonNullable<typeof g> => !!g && g.items.length > 0);
+    // Aggregate the concrete procedures (price items) shown + searchable on the
+    // section page: every item hand-picked for this section's services, plus the
+    // direction's own catalog category (used by specialty sections).
+    const allItems = await storage.listPriceItems();
+    const spLinks = await storage.listServicePriceItems();
+    const svcIds = new Set(services.map((s) => s.id));
+    const wantedItemIds = new Set<string>();
+    for (const l of spLinks) if (svcIds.has(l.serviceId)) wantedItemIds.add(l.priceItemId);
+    if (dir.priceCategoryId) {
+      for (const it of allItems) {
+        if (it.categoryId === dir.priceCategoryId) wantedItemIds.add(it.id);
+      }
     }
+    const cats = await storage.listPriceCategories();
+    const priceGroups = cats
+      .map((c) => ({
+        id: c.id,
+        name: c.name,
+        items: allItems
+          .filter((i) => i.categoryId === c.id && wantedItemIds.has(i.id))
+          .map((i) => ({ id: i.id, name: i.name, price: i.price, note: i.note })),
+      }))
+      .filter((g) => g.items.length > 0);
     res.json({ ...dir, services, priceGroups });
   });
   app.get("/api/admin/directions", requireAuth, async (_req, res) => {
     const dirs = await storage.listDirections(false);
     const allServices = await storage.listServices();
+    const links = await storage.listServiceDirections();
+    const dirIdsBySvc = new Map<string, Set<string>>();
+    for (const l of links) {
+      const set = dirIdsBySvc.get(l.serviceId);
+      if (set) set.add(l.directionId);
+      else dirIdsBySvc.set(l.serviceId, new Set([l.directionId]));
+    }
     res.json(
       dirs.map((d) => ({
         ...d,
-        services: allServices.filter((s) => s.directionId === d.id),
+        services: allServices.filter((s) => dirIdsBySvc.get(s.id)?.has(d.id)),
       })),
     );
   });
@@ -340,42 +295,83 @@ export async function registerRoutes(
     res.json({ message: "ok" });
   });
 
-  // Public: single service by slug (with its direction)
+  // Public: single service by slug (with its primary direction + chosen procedures)
   app.get("/api/services/:slug", async (req, res) => {
     const service = await storage.getServiceBySlug(pid(req, "slug"));
     if (!service || !service.active) return res.status(404).json({ message: "Не найдено" });
-    const direction = await storage.getDirection(service.directionId);
-    if (!direction || !direction.active) return res.status(404).json({ message: "Не найдено" });
-    const related = (await storage.listServices(direction.id)).filter(
-      (s) => s.active && s.id !== service.id,
+    // Resolve the service's directions; the first active one drives the page
+    // accent + breadcrumb (a service can belong to several directions).
+    const dLinks = (await storage.listServiceDirections()).filter(
+      (l) => l.serviceId === service.id,
     );
-    let priceCategory: { id: string; name: string } | null = null;
-    let priceItems: { id: string; name: string; price: string }[] = [];
-    if (service.priceCategoryId) {
-      const cat = (await storage.listPriceCategories()).find(
-        (c) => c.id === service.priceCategoryId,
-      );
-      if (cat) {
-        priceCategory = { id: cat.id, name: cat.name };
-        priceItems = (await storage.listPriceItems(cat.id)).map((i) => ({
-          id: i.id,
-          name: i.name,
-          price: i.price,
-        }));
-      }
+    const allDirections = await storage.listDirections(false);
+    const dirById = new Map(allDirections.map((d) => [d.id, d] as const));
+    const memberDirs = dLinks
+      .map((l) => dirById.get(l.directionId))
+      .filter((d): d is Direction => !!d && d.active);
+    if (memberDirs.length === 0) return res.status(404).json({ message: "Не найдено" });
+    const direction = memberDirs[0];
+    // Hand-picked procedures = the "сопутствующие услуги" block, in chosen order.
+    const spLinks = (await storage.listServicePriceItems()).filter(
+      (l) => l.serviceId === service.id,
+    );
+    const itemById = new Map((await storage.listPriceItems()).map((i) => [i.id, i] as const));
+    const priceItems = spLinks
+      .map((l) => itemById.get(l.priceItemId))
+      .filter((i): i is PriceItem => !!i)
+      .map((i) => ({ id: i.id, name: i.name, price: i.price }));
+    res.json({ ...service, direction, directions: memberDirs, priceItems });
+  });
+
+  // Admin: every service enriched with its direction + price-item links
+  app.get("/api/admin/services", requireAuth, async (_req, res) => {
+    const [allServices, dLinks, pLinks] = await Promise.all([
+      storage.listServices(),
+      storage.listServiceDirections(),
+      storage.listServicePriceItems(),
+    ]);
+    const dirBySvc = new Map<string, string[]>();
+    for (const l of dLinks) {
+      const arr = dirBySvc.get(l.serviceId);
+      if (arr) arr.push(l.directionId);
+      else dirBySvc.set(l.serviceId, [l.directionId]);
     }
-    res.json({ ...service, direction, related, priceCategory, priceItems });
+    const itemBySvc = new Map<string, string[]>();
+    for (const l of pLinks) {
+      const arr = itemBySvc.get(l.serviceId);
+      if (arr) arr.push(l.priceItemId);
+      else itemBySvc.set(l.serviceId, [l.priceItemId]);
+    }
+    res.json(
+      allServices.map((s) => ({
+        ...s,
+        directionIds: dirBySvc.get(s.id) ?? [],
+        priceItemIds: itemBySvc.get(s.id) ?? [],
+      })),
+    );
   });
 
   app.post("/api/admin/services", requireAuth, async (req, res) => {
-    const data = parseBody(insertServiceSchema, req.body, res);
+    const { directionIds, priceItemIds, ...rest } = req.body ?? {};
+    const data = parseBody(insertServiceSchema, rest, res);
     if (!data) return;
-    res.status(201).json(await storage.createService(data));
+    const svc = await storage.createServiceWithRelations(
+      data,
+      Array.isArray(directionIds) ? directionIds : [],
+      Array.isArray(priceItemIds) ? priceItemIds : [],
+    );
+    res.status(201).json(svc);
   });
   app.patch("/api/admin/services/:id", requireAuth, async (req, res) => {
-    const data = parseBody(insertServiceSchema.partial(), req.body, res);
+    const { directionIds, priceItemIds, ...rest } = req.body ?? {};
+    const data = parseBody(insertServiceSchema.partial(), rest, res);
     if (!data) return;
-    const updated = await storage.updateService(pid(req), data);
+    const updated = await storage.updateServiceWithRelations(
+      pid(req),
+      data,
+      Array.isArray(directionIds) ? directionIds : undefined,
+      Array.isArray(priceItemIds) ? priceItemIds : undefined,
+    );
     if (!updated) return res.status(404).json({ message: "Не найдено" });
     res.json(updated);
   });
@@ -454,19 +450,24 @@ export async function registerRoutes(
       dentistry: "/stomatologiya",
       cosmetology: "/kosmetologiya",
     };
-    const [directions, allServices, cats, items, doctors, myths, promotions, reviews] =
+    const [directions, allServices, sdLinks, cats, items, doctors, myths, promotions] =
       await Promise.all([
         storage.listDirections(true),
         storage.listServices(),
+        storage.listServiceDirections(),
         storage.listPriceCategories(),
         storage.listPriceItems(),
         storage.listDoctors(true),
         storage.listMyths(true),
         storage.listPromotions(true),
-        storage.listReviews(true),
       ]);
     const catName = new Map(cats.map((c) => [c.id, c.name]));
     const dirById = new Map(directions.map((d) => [d.id, d]));
+    // First listed direction per service drives its search subtitle.
+    const primaryDirBySvc = new Map<string, string>();
+    for (const l of sdLinks) {
+      if (!primaryDirBySvc.has(l.serviceId)) primaryDirBySvc.set(l.serviceId, l.directionId);
+    }
 
     const entries: Array<{
       type: string;
@@ -489,7 +490,7 @@ export async function registerRoutes(
     }
     for (const s of allServices) {
       if (!s.active) continue;
-      const dir = dirById.get(s.directionId);
+      const dir = dirById.get(primaryDirBySvc.get(s.id) ?? "");
       entries.push({
         type: "service",
         group: "Услуги",
@@ -537,16 +538,6 @@ export async function registerRoutes(
         subtitle: p.description,
         url: p.slug ? `/akcii/${p.slug}` : "/akcii",
         keywords: `${p.title} ${p.description} ${p.intro} акция скидка предложение`,
-      });
-    }
-    for (const r of reviews) {
-      entries.push({
-        type: "review",
-        group: "Отзывы",
-        title: r.name,
-        subtitle: r.text,
-        url: "/#about",
-        keywords: `${r.name} ${r.text} отзыв`,
       });
     }
 

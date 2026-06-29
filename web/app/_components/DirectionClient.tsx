@@ -51,7 +51,7 @@ type Props = {
   initialData?: Direction;
 };
 
-const DEFAULT_ACCENT = "#007d83";
+const DEFAULT_ACCENT = "#005eb8";
 
 export default function DirectionClient({ slug, initialData }: Props): JSX.Element | null {
   const go = useGo();
@@ -223,7 +223,7 @@ export default function DirectionClient({ slug, initialData }: Props): JSX.Eleme
                 {filtered.map((s) => (
                   <Link
                     key={s.id}
-                    href={`/uslugi/${s.slug}`}
+                    href={`/uslugi/${s.slug}?from=${slug}`}
                     data-testid={`card-service-${s.slug}`}
                     className="group flex flex-col rounded-2xl border border-gray-100 bg-white p-6 transition-all hover:-translate-y-0.5 hover:shadow-lg"
                     style={{ boxShadow: "0 1px 4px rgba(0,0,0,0.04)" }}

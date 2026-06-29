@@ -7,20 +7,18 @@ export default async function Page() {
   const [
     initialSettings,
     initialNavLinks,
-    initialStats,
-    initialReviews,
     initialDoctors,
     initialBenefits,
+    initialStories,
     initialPromotions,
     initialDirections,
     initialMyths,
   ] = await Promise.all([
     apiGet<Record<string, any>>("/api/settings"),
     apiGet<any[]>("/api/nav-links"),
-    apiGet<any[]>("/api/stats"),
-    apiGet<any[]>("/api/reviews"),
     apiGet<any[]>("/api/doctors"),
     apiGet<any[]>("/api/benefits"),
+    apiGet<any[]>("/api/stories"),
     apiGet<any[]>("/api/promotions"),
     apiGet<any[]>("/api/directions"),
     apiGet<any[]>("/api/myths"),
@@ -32,10 +30,9 @@ export default async function Page() {
       <HomeClient
       initialSettings={initialSettings}
       initialNavLinks={initialNavLinks}
-      initialStats={initialStats}
-      initialReviews={initialReviews}
       initialDoctors={initialDoctors}
       initialBenefits={initialBenefits}
+      initialStories={initialStories}
       initialPromotions={initialPromotions}
       initialDirections={initialDirections}
       initialMyths={initialMyths}

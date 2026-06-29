@@ -3,7 +3,7 @@ import { notFound } from "next/navigation";
 import ServiceClient from "../../_components/ServiceClient";
 import { apiGet } from "../../lib/api";
 import { JsonLd } from "../../_components/JsonLd";
-import { breadcrumbLd, pageOpenGraph } from "../../lib/seo";
+import { breadcrumbLd, pageOpenGraph, pageKeywords } from "../../lib/seo";
 import { directionPath } from "../../lib/site";
 
 type Direction = { id: string; slug: string; label: string };
@@ -36,12 +36,24 @@ export async function generateMetadata({
   return {
     title,
     description,
+    keywords: pageKeywords([
+      svc.name,
+      `${svc.name} Москва`,
+      `${svc.name} цена`,
+      svc.direction?.label,
+    ]),
     alternates: { canonical: path },
     openGraph: pageOpenGraph({ title, description, path }),
   };
 }
 
-export default async function Page({ params }: { params: { slug: string } }) {
+export default async function Page({
+  params,
+  searchParams,
+}: {
+  params: { slug: string };
+  searchParams: { from?: string };
+}) {
   const svc = await getService(params.slug);
   if (!svc) notFound();
 
@@ -60,7 +72,7 @@ export default async function Page({ params }: { params: { slug: string } }) {
           ]),
         ]}
       />
-      <ServiceClient slug={params.slug} initialData={svc as any} initialSettings={initialSettings} />
+      <ServiceClient slug={params.slug} from={searchParams.from} initialData={svc as any} initialSettings={initialSettings} />
     </>
   );
 }

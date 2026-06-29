@@ -9,7 +9,7 @@ import { SiteFooter } from "./SiteFooter";
 import { SiteMobileNav } from "./SiteMobileNav";
 import { useGo } from "../lib/use-go";
 
-const ACCENT = "#007d83";
+const ACCENT = "#005eb8";
 
 const rgba = (hex: string, a: number) => {
   const r = parseInt(hex.slice(1, 3), 16);
@@ -126,12 +126,10 @@ export default function PromotionClient({
                       </span>
                     </div>
                   )}
-                  {data.date && (
-                    <div className="flex items-center gap-2 rounded-2xl border border-gray-100 bg-white px-5 py-3">
-                      <Clock className="h-4 w-4 text-gray-400" />
-                      <span className="text-sm font-medium text-[#5a6b78]">{data.date}</span>
-                    </div>
-                  )}
+                  <div className="flex items-center gap-2 rounded-2xl border border-gray-100 bg-white px-5 py-3">
+                    <Clock className="h-4 w-4 text-gray-400" />
+                    <span className="text-sm font-medium text-[#5a6b78]">Срок действия ограничен</span>
+                  </div>
                 </div>
 
                 <div className="mt-7 flex flex-col items-start gap-3 sm:flex-row sm:items-center">

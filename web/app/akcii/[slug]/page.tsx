@@ -3,7 +3,7 @@ import { notFound } from "next/navigation";
 import PromotionClient from "../../_components/PromotionClient";
 import { apiGet } from "../../lib/api";
 import { JsonLd } from "../../_components/JsonLd";
-import { breadcrumbLd, pageOpenGraph } from "../../lib/seo";
+import { breadcrumbLd, pageOpenGraph, pageKeywords } from "../../lib/seo";
 
 type Promotion = {
   id: string;
@@ -33,6 +33,11 @@ export async function generateMetadata({
   return {
     title,
     description,
+    keywords: pageKeywords([
+      promo.title,
+      "акции клиника Москва",
+      "скидки на медицинские услуги",
+    ]),
     alternates: { canonical: path },
     openGraph: pageOpenGraph({ title, description, path }),
   };

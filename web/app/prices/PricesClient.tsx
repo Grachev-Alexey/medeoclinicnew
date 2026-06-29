@@ -93,6 +93,33 @@ export default function PricesClient({
     };
   }, []);
 
+  useEffect(() => {
+    if (q) return;
+    const els = categories
+      .map((c) => document.getElementById(`cat-${c.id}`))
+      .filter((el): el is HTMLElement => el !== null);
+    if (els.length === 0) return;
+    const obs = new IntersectionObserver(
+      (entries) => {
+        const visible = entries
+          .filter((e) => e.isIntersecting)
+          .sort((a, b) => a.boundingClientRect.top - b.boundingClientRect.top);
+        if (visible[0]) {
+          setActiveCat(visible[0].target.id.replace("cat-", ""));
+        }
+      },
+      { rootMargin: "-120px 0px -65% 0px", threshold: 0 },
+    );
+    els.forEach((el) => obs.observe(el));
+    return () => obs.disconnect();
+  }, [categories, q]);
+
+  useEffect(() => {
+    if (!activeCat) return;
+    const chip = document.querySelector(`[data-testid="chip-category-${activeCat}"]`);
+    chip?.scrollIntoView({ inline: "center", block: "nearest", behavior: "smooth" });
+  }, [activeCat]);
+
   const goCategory = (id: string) => {
     setActiveCat(id);
     const el = document.getElementById(`cat-${id}`);
@@ -111,7 +138,7 @@ export default function PricesClient({
               <button
                 type="button"
                 onClick={() => go("/")}
-                className="hover:text-[#007d83] transition-colors"
+                className="hover:text-[#005eb8] transition-colors"
                 data-testid="link-breadcrumb-home"
               >
                 Главная
@@ -119,7 +146,7 @@ export default function PricesClient({
               <ChevronRight className="h-3 w-3" />
               <span className="text-gray-600">Цены</span>
             </nav>
-            <p className="text-[10px] font-extrabold tracking-[0.22em] uppercase text-[#007d83] mb-3">
+            <p className="text-[10px] font-extrabold tracking-[0.22em] uppercase text-[#005eb8] mb-3">
               Прайс-лист
             </p>
             <h1 className="font-heading text-3xl lg:text-5xl text-[#0f1c2e] leading-[1.1] tracking-tight">
@@ -139,7 +166,7 @@ export default function PricesClient({
                 onChange={(e) => setSearch(e.target.value)}
                 placeholder="Найдите услугу — например, «УЗИ» или «приём»"
                 data-testid="input-prices-search"
-                className="w-full rounded-full border border-gray-200 bg-white py-3.5 pl-12 pr-11 text-sm text-[#1a2535] shadow-sm outline-none transition-colors placeholder:text-gray-400 focus:border-[#007d83] focus:ring-2 focus:ring-[#007d83]/15"
+                className="w-full rounded-full border border-gray-200 bg-white py-3.5 pl-12 pr-11 text-sm text-[#1a2535] shadow-sm outline-none transition-colors placeholder:text-gray-400 focus:border-[#005eb8] focus:ring-2 focus:ring-[#005eb8]/15"
               />
               {search && (
                 <button
@@ -174,8 +201,8 @@ export default function PricesClient({
                     data-testid={`chip-category-${cat.id}`}
                     className={`shrink-0 rounded-full px-4 py-2 text-[13px] font-medium transition-all whitespace-nowrap ${
                       activeCat === cat.id
-                        ? "bg-[#007d83] text-white shadow-sm"
-                        : "bg-white text-gray-600 border border-gray-200 hover:border-[#007d83] hover:text-[#007d83]"
+                        ? "bg-[#005eb8] text-white shadow-sm"
+                        : "bg-white text-gray-600 border border-gray-200 hover:border-[#005eb8] hover:text-[#005eb8]"
                     }`}
                   >
                     {cat.name}
@@ -224,6 +251,51 @@ export default function PricesClient({
             </div>
           )}
 
+          <div className={!q && categories.length > 0 ? "lg:grid lg:grid-cols-[252px_minmax(0,1fr)] lg:gap-10 lg:items-start" : ""}>
+            {!q && categories.length > 0 && (
+              <aside className="hidden lg:block lg:sticky lg:top-28 self-start">
+                <p className="px-3 mb-3 text-[11px] font-semibold uppercase tracking-[0.18em] text-gray-400">
+                  Разделы
+                </p>
+                <nav className="flex flex-col gap-0.5">
+                  {categories.map((cat) => (
+                    <button
+                      key={cat.id}
+                      type="button"
+                      onClick={() => goCategory(cat.id)}
+                      data-testid={`toc-category-${cat.id}`}
+                      className={`group flex items-center gap-2 rounded-xl px-3 py-2.5 text-left text-sm transition-colors ${
+                        activeCat === cat.id
+                          ? "bg-[#e8f1fc] font-semibold text-[#005eb8]"
+                          : "text-gray-600 hover:bg-gray-100 hover:text-[#0f1c2e]"
+                      }`}
+                    >
+                      <span
+                        className={`h-4 w-1 shrink-0 rounded-full transition-colors ${
+                          activeCat === cat.id ? "bg-[#005eb8]" : "bg-transparent"
+                        }`}
+                      />
+                      <span className="flex-1 leading-tight">{cat.name}</span>
+                      <span className="shrink-0 text-xs text-gray-400">{cat.items.length}</span>
+                    </button>
+                  ))}
+                </nav>
+                <div className="mt-6 rounded-2xl border border-[#005eb8]/15 bg-[#f2f8fe] p-5">
+                  <p className="text-sm font-semibold text-[#0f1c2e]">Нужна помощь с выбором?</p>
+                  <p className="mt-1.5 text-xs leading-relaxed text-[#6b7280]">
+                    Администратор подскажет цену и подберёт врача.
+                  </p>
+                  <a
+                    href={telHref}
+                    data-testid="link-toc-phone"
+                    className="mt-3 inline-flex items-center gap-2 text-sm font-semibold text-[#005eb8] transition-colors hover:text-[#004a93]"
+                  >
+                    <Phone className="h-4 w-4" /> {phone}
+                  </a>
+                </div>
+              </aside>
+            )}
+            <div className="min-w-0">
           <div className="grid gap-6 lg:gap-8">
             {filtered.map((cat) => (
               <section
@@ -234,7 +306,7 @@ export default function PricesClient({
               >
                 <div className="rounded-2xl border border-gray-100 bg-white shadow-sm overflow-hidden">
                   <div className="flex items-center gap-3 px-5 sm:px-7 py-5 border-b border-gray-100">
-                    <span className="h-6 w-1 shrink-0 rounded-full bg-[#007d83]" />
+                    <span className="h-6 w-1 shrink-0 rounded-full bg-[#005eb8]" />
                     <h2 className="font-heading text-xl lg:text-2xl text-[#0f1c2e]">{cat.name}</h2>
                     <span className="ml-auto text-xs text-gray-400">
                       {cat.items.length} {cat.items.length === 1 ? "услуга" : "услуг"}
@@ -248,7 +320,7 @@ export default function PricesClient({
                         data-testid={`row-price-${item.id}`}
                         className={`flex items-baseline justify-between gap-4 px-5 sm:px-7 py-4 border-b border-gray-50 last:border-0 transition-colors scroll-mt-28 ${
                           highlightId === item.id
-                            ? "bg-[#e8f6f6] ring-2 ring-inset ring-[#007d83]/40"
+                            ? "bg-[#e8f1fc] ring-2 ring-inset ring-[#005eb8]/40"
                             : "hover:bg-gray-50/70"
                         }`}
                       >
@@ -258,7 +330,7 @@ export default function PricesClient({
                             <p className="text-xs text-gray-400 mt-0.5">{item.note}</p>
                           )}
                         </div>
-                        <div className="text-[14px] sm:text-[15px] font-semibold text-[#007d83] whitespace-nowrap">
+                        <div className="text-[14px] sm:text-[15px] font-semibold text-[#005eb8] whitespace-nowrap">
                           {item.price}
                         </div>
                       </li>
@@ -270,7 +342,7 @@ export default function PricesClient({
           </div>
 
           {/* CTA */}
-          <div className="mt-12 rounded-3xl bg-[#e8f6f6] px-6 py-10 lg:px-12 lg:py-14 text-center">
+          <div className="mt-12 rounded-3xl bg-[#e8f1fc] px-6 py-10 lg:px-12 lg:py-14 text-center">
             <h2 className="font-heading text-2xl lg:text-3xl text-[#0f1c2e]">
               Не нашли нужную услугу?
             </h2>
@@ -283,17 +355,19 @@ export default function PricesClient({
                 type="button"
                 onClick={() => go("#contacts")}
                 data-testid="button-prices-book"
-                className="inline-flex items-center gap-2 rounded-full bg-[#007d83] px-7 py-3.5 text-sm font-semibold text-white transition-all hover:bg-[#006970] hover:shadow-lg"
+                className="inline-flex items-center gap-2 rounded-full bg-[#005eb8] px-7 py-3.5 text-sm font-semibold text-white transition-all hover:bg-[#004a93] hover:shadow-lg"
               >
                 Записаться на приём <ArrowRight className="h-4 w-4" />
               </button>
               <a
                 href={telHref}
                 data-testid="link-prices-phone"
-                className="inline-flex items-center gap-2 rounded-full border border-[#007d83]/30 bg-white px-7 py-3.5 text-sm font-semibold text-[#007d83] transition-all hover:border-[#007d83]"
+                className="inline-flex items-center gap-2 rounded-full border border-[#005eb8]/30 bg-white px-7 py-3.5 text-sm font-semibold text-[#005eb8] transition-all hover:border-[#005eb8]"
               >
                 <Phone className="h-4 w-4" /> {phone}
               </a>
+            </div>
+          </div>
             </div>
           </div>
         </div>

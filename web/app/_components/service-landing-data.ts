@@ -52,15 +52,15 @@ export type ServiceLanding = {
 export const stomatologyLanding: ServiceLanding = {
   slug: "dentistry",
   path: "/stomatologiya",
-  accent: "#007d83",
-  accentDark: "#006970",
-  accentSoft: "#e8f6f6",
+  accent: "#005eb8",
+  accentDark: "#004a93",
+  accentSoft: "#e8f1fc",
   breadcrumb: "Стоматология",
   eyebrow: "Стоматология в Москве",
   title: "Здоровая улыбка без боли и переплат",
   subtitle:
     "Лечим, восстанавливаем и сохраняем зубы по протоколам доказательной медицины. Честный план лечения, прозрачные цены и гарантия на работу — чтобы вы возвращались только на плановые осмотры.",
-  heroImage: "/image/stomatology-hero.png",
+  heroImage: "/image/stomatology-hero.webp",
   heroHighlights: ["Лечение без боли", "Гарантия до 5 лет", "Честный план лечения"],
   stats: [
     { value: "до 5 лет", label: "гарантия на лечение" },
@@ -127,7 +127,7 @@ export const stomatologyLanding: ServiceLanding = {
     "Врачи работают с современным оборудованием и качественными материалами, а перед началом лечения вы всегда получаете понятный план с фиксированной стоимостью.",
     "Мы заботимся о комфорте: бережная анестезия, спокойная атмосфера и внимательное отношение помогают забыть о страхе перед стоматологом.",
   ],
-  aboutImage: "/image/stomatology.png",
+  aboutImage: "/image/stomatology.webp",
   faqTitle: "Частые вопросы",
   faq: [
     {
@@ -167,7 +167,7 @@ export const cosmetologyLanding: ServiceLanding = {
   title: "Ухоженная кожа и естественная красота",
   subtitle:
     "Эстетическая и врачебная косметология: инъекции, аппаратные процедуры и профессиональный уход. Подбираем программу под вашу кожу — без избыточных процедур и навязывания.",
-  heroImage: "/image/cosmetology-hero.png",
+  heroImage: "/image/cosmetology-hero.webp",
   heroHighlights: ["Оригинальные препараты", "Врачи-косметологи", "Индивидуальная программа"],
   stats: [
     { value: "20+", label: "процедур и методик" },
@@ -234,7 +234,7 @@ export const cosmetologyLanding: ServiceLanding = {
     "Все инъекционные и аппаратные процедуры выполняют врачи-косметологи с использованием сертифицированных препаратов и оборудования.",
     "Наша цель — естественный, ухоженный результат, который подчёркивает вашу красоту, а не меняет лицо до неузнаваемости.",
   ],
-  aboutImage: "/image/cosmetology.png",
+  aboutImage: "/image/cosmetology.webp",
   faqTitle: "Частые вопросы",
   faq: [
     {

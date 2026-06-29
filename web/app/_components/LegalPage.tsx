@@ -66,7 +66,7 @@ function Block({ block, vars }: { block: LegalBlock; vars: LegalVars }) {
       <ul className="my-4 flex flex-col gap-2.5">
         {block.items.map((item, i) => (
           <li key={i} className="flex items-start gap-3">
-            <span className="mt-2 h-1.5 w-1.5 shrink-0 rounded-full bg-[#007d83]" />
+            <span className="mt-2 h-1.5 w-1.5 shrink-0 rounded-full bg-[#005eb8]" />
             <span className="text-[15px] leading-relaxed text-[#374151]">
               {fill(item, vars)}
             </span>
@@ -124,10 +124,10 @@ export function LegalPage({
 
       <main className="pt-16">
         {/* Hero band */}
-        <section className="relative overflow-hidden border-b border-gray-100 bg-gradient-to-b from-[#eef6f6] to-white">
+        <section className="relative overflow-hidden border-b border-gray-100 bg-gradient-to-b from-[#eef4fc] to-white">
           <div
             className="pointer-events-none absolute -right-24 -top-24 h-72 w-72 rounded-full opacity-50 blur-3xl"
-            style={{ background: "radial-gradient(circle, rgba(0,125,131,0.16), transparent 70%)" }}
+            style={{ background: "radial-gradient(circle, rgba(0,94,184,0.16), transparent 70%)" }}
             aria-hidden="true"
           />
           <div className="relative mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-12 lg:py-16">
@@ -135,7 +135,7 @@ export function LegalPage({
               <Link
                 href="/"
                 data-testid="link-breadcrumb-home"
-                className="transition-colors hover:text-[#007d83]"
+                className="transition-colors hover:text-[#005eb8]"
               >
                 Главная
               </Link>
@@ -143,7 +143,7 @@ export function LegalPage({
               <span className="text-[#374151]">{title}</span>
             </nav>
 
-            <div className="mt-5 inline-flex items-center gap-2 rounded-full bg-white px-3.5 py-1.5 text-xs font-medium text-[#007d83] shadow-sm ring-1 ring-[#007d83]/10">
+            <div className="mt-5 inline-flex items-center gap-2 rounded-full bg-white px-3.5 py-1.5 text-xs font-medium text-[#005eb8] shadow-sm ring-1 ring-[#005eb8]/10">
               <ShieldCheck className="h-3.5 w-3.5" />
               Соответствует требованиям 152-ФЗ
             </div>
@@ -155,7 +155,7 @@ export function LegalPage({
               {fill(lead, vars)}
             </p>
             <p className="mt-5 inline-flex items-center gap-2 text-sm text-gray-400">
-              <CalendarClock className="h-4 w-4 text-[#007d83]" />
+              <CalendarClock className="h-4 w-4 text-[#005eb8]" />
               Редакция от {updated}
             </p>
           </div>
@@ -182,7 +182,7 @@ export function LegalPage({
                           data-testid={`link-toc-${s.id}`}
                           className={`-ml-px flex w-full items-start gap-2 border-l-2 py-1.5 pl-4 pr-2 text-left text-sm transition-colors ${
                             isActive
-                              ? "border-[#007d83] font-medium text-[#007d83]"
+                              ? "border-[#005eb8] font-medium text-[#005eb8]"
                               : "border-transparent text-[#6b7280] hover:text-[#0f1c2e]"
                           }`}
                         >
@@ -198,7 +198,7 @@ export function LegalPage({
               {requisites && (
                 <div className="mt-8 rounded-2xl border border-gray-100 bg-[#f8fafa] p-5 shadow-sm">
                   <div className="flex items-center gap-2 text-[#0f1c2e]">
-                    <BadgeCheck className="h-5 w-5 text-[#007d83]" />
+                    <BadgeCheck className="h-5 w-5 text-[#005eb8]" />
                     <span className="text-sm font-semibold">Оператор / реквизиты</span>
                   </div>
                   <dl className="mt-4 flex flex-col gap-3.5 text-sm">
@@ -218,17 +218,17 @@ export function LegalPage({
                     )}
                     {vars.address && (
                       <div className="flex items-start gap-2">
-                        <MapPin className="mt-0.5 h-4 w-4 shrink-0 text-[#007d83]" />
+                        <MapPin className="mt-0.5 h-4 w-4 shrink-0 text-[#005eb8]" />
                         <dd className="text-[#374151]">{vars.address}</dd>
                       </div>
                     )}
                     {vars.phone && (
                       <div className="flex items-start gap-2">
-                        <Phone className="mt-0.5 h-4 w-4 shrink-0 text-[#007d83]" />
+                        <Phone className="mt-0.5 h-4 w-4 shrink-0 text-[#005eb8]" />
                         <dd>
                           <a
                             href={telHref(vars.phone)}
-                            className="text-[#374151] transition-colors hover:text-[#007d83]"
+                            className="text-[#374151] transition-colors hover:text-[#005eb8]"
                           >
                             {vars.phone}
                           </a>
@@ -249,7 +249,7 @@ export function LegalPage({
                   className="scroll-mt-24 border-b border-gray-100 pb-8 pt-2 first:pt-0 last:border-0"
                 >
                   <div className="flex items-baseline gap-3">
-                    <span className="text-sm font-semibold text-[#007d83]">
+                    <span className="text-sm font-semibold text-[#005eb8]">
                       {String(i + 1).padStart(2, "0")}
                     </span>
                     <h2 className="text-xl font-bold tracking-tight text-[#0f1c2e] sm:text-2xl">
@@ -265,7 +265,7 @@ export function LegalPage({
               ))}
 
               {/* Contact CTA */}
-              <div className="mt-10 flex flex-col gap-4 rounded-2xl border border-[#007d83]/15 bg-[#eef6f6] p-7 sm:flex-row sm:items-center sm:justify-between">
+              <div className="mt-10 flex flex-col gap-4 rounded-2xl border border-[#005eb8]/15 bg-[#eef4fc] p-7 sm:flex-row sm:items-center sm:justify-between">
                 <div>
                   <p className="text-lg font-semibold text-[#0f1c2e]">Остались вопросы?</p>
                   <p className="mt-1 text-sm text-[#6b7280]">
@@ -276,7 +276,7 @@ export function LegalPage({
                   <a
                     href={telHref(vars.phone)}
                     data-testid="link-legal-phone"
-                    className="inline-flex shrink-0 items-center gap-2 rounded-full bg-[#007d83] px-6 py-3 text-sm font-semibold text-white transition-all hover:bg-[#00969d]"
+                    className="inline-flex shrink-0 items-center gap-2 rounded-full bg-[#005eb8] px-6 py-3 text-sm font-semibold text-white transition-all hover:bg-[#1e72c8]"
                   >
                     <Phone className="h-4 w-4" /> {vars.phone}
                   </a>
@@ -286,7 +286,7 @@ export function LegalPage({
               <Link
                 href="/contacts"
                 data-testid="link-legal-contacts"
-                className="mt-5 inline-flex items-center gap-1.5 text-sm font-medium text-[#007d83] transition-colors hover:text-[#00969d]"
+                className="mt-5 inline-flex items-center gap-1.5 text-sm font-medium text-[#005eb8] transition-colors hover:text-[#1e72c8]"
               >
                 Перейти к контактам клиники
                 <ArrowUpRight className="h-4 w-4" />

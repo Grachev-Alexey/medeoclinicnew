@@ -6,8 +6,9 @@ import { ArrowLeft, ArrowRight, ShieldCheck, Stethoscope } from "lucide-react";
 import { SiteHeader } from "./SiteHeader";
 import { SiteFooter } from "./SiteFooter";
 import { SiteMobileNav } from "./SiteMobileNav";
+import { DoctorRatings } from "@/reused-pages/sections/DoctorRatings";
 
-const ACCENT = "#007d83";
+const ACCENT = "#005eb8";
 
 type Doctor = {
   id: string;
@@ -18,8 +19,13 @@ type Doctor = {
   price: string;
   imageUrl: string;
   quote: string;
-  about: string;
   credentials: string[];
+  prodoctorovUrl: string;
+  prodoctorovRating: string;
+  prodoctorovReviews: string;
+  yandexUrl: string;
+  yandexRating: string;
+  yandexReviews: string;
   available: boolean;
   availableDate: string;
 };
@@ -37,10 +43,6 @@ export default function DoctorClient({ slug, initialData }: Props): JSX.Element 
 
   if (!doctor) return <></>;
 
-  const aboutParagraphs = (doctor.about || "")
-    .split(/\n\s*\n/)
-    .map((p) => p.trim())
-    .filter(Boolean);
   const credentials = (doctor.credentials || []).filter(Boolean);
 
   return (
@@ -50,13 +52,13 @@ export default function DoctorClient({ slug, initialData }: Props): JSX.Element 
         <div className="mx-auto max-w-6xl px-4 py-8 sm:px-6 lg:px-8 lg:py-14">
           <Link
             href="/vrachi"
-            className="inline-flex items-center gap-1.5 text-sm font-medium text-[#5a6b78] transition-colors hover:text-[#007d83]"
+            className="inline-flex items-center gap-1.5 text-sm font-medium text-[#5a6b78] transition-colors hover:text-[#005eb8]"
             data-testid="link-back-doctors"
           >
             <ArrowLeft className="h-4 w-4" /> Все врачи
           </Link>
 
-          <div className="mt-6 overflow-hidden rounded-3xl bg-gradient-to-br from-[#f3fbfb] via-white to-[#eaf6f6] ring-1 ring-[#007d83]/10 lg:rounded-[2.5rem]">
+          <div className="mt-6 overflow-hidden rounded-3xl bg-gradient-to-br from-[#f2f8fe] via-white to-[#eaf3fc] ring-1 ring-[#005eb8]/10 lg:rounded-[2.5rem]">
             <div className="grid grid-cols-1 lg:grid-cols-[minmax(0,0.8fr)_minmax(0,1fr)]">
               {/* Portrait */}
               <div className="relative aspect-[4/5] sm:aspect-[16/10] lg:aspect-auto lg:min-h-[520px]">
@@ -100,16 +102,7 @@ export default function DoctorClient({ slug, initialData }: Props): JSX.Element 
                   </p>
                 ) : null}
 
-                {aboutParagraphs.length > 0 ? (
-                  <div
-                    className="mt-5 space-y-4 text-[15px] leading-relaxed text-gray-600"
-                    data-testid="text-doctor-about"
-                  >
-                    {aboutParagraphs.map((p, i) => (
-                      <p key={i}>{p}</p>
-                    ))}
-                  </div>
-                ) : null}
+                <DoctorRatings doctor={doctor} />
 
                 {credentials.length > 0 ? (
                   <ul className="mt-7 space-y-3" data-testid="list-doctor-credentials">
@@ -119,18 +112,18 @@ export default function DoctorClient({ slug, initialData }: Props): JSX.Element 
                         className="flex items-center gap-3 text-sm font-medium text-[#0f1c2e]"
                         data-testid={`credential-${i}`}
                       >
-                        <ShieldCheck className="h-5 w-5 shrink-0 text-[#007d83]" />
+                        <ShieldCheck className="h-5 w-5 shrink-0 text-[#005eb8]" />
                         <span>{item}</span>
                       </li>
                     ))}
                   </ul>
                 ) : null}
 
-                <div className="mt-8 flex flex-col gap-4 border-t border-[#007d83]/10 pt-7 sm:flex-row sm:items-center sm:justify-between">
+                <div className="mt-8 flex flex-col gap-4 border-t border-[#005eb8]/10 pt-7 sm:flex-row sm:items-center sm:justify-between">
                   <div>
                     <a
                       href="#contacts"
-                      className="group inline-flex items-center rounded-full bg-[#007d83] px-7 py-3.5 text-base font-medium text-white transition-colors hover:bg-[#006970]"
+                      className="group inline-flex items-center rounded-full bg-[#005eb8] px-7 py-3.5 text-base font-medium text-white transition-colors hover:bg-[#004a93]"
                       data-testid="button-book-doctor"
                     >
                       Записаться на приём

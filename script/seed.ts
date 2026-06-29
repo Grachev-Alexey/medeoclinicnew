@@ -8,11 +8,12 @@ import {
   doctors,
   directions,
   services,
+  serviceDirections,
+  servicePriceItems,
   myths,
-  reviews,
   promotions,
+  stories,
   benefits,
-  stats,
   navLinks,
 } from "../shared/schema";
 
@@ -30,16 +31,6 @@ async function seed() {
     console.log("• Admin already exists, skipping");
   }
 
-  /* ------------------------------- Stats --------------------------------- */
-  if ((await storage.listStats()).length === 0) {
-    await db.insert(stats).values([
-      { value: "15+", label: "лет работы", sortOrder: 0 },
-      { value: "30+", label: "специалистов", sortOrder: 1 },
-      { value: "50 000+", label: "пациентов", sortOrder: 2 },
-    ]);
-    console.log("✓ Stats seeded");
-  }
-
   /* ------------------------------ Doctors -------------------------------- */
   if ((await storage.listDoctors()).length === 0) {
     await db.insert(doctors).values(DOCTORS_SEED);
@@ -49,17 +40,23 @@ async function seed() {
   /* ----------------------------- Directions ------------------------------ */
   if ((await storage.listDirections()).length === 0) {
     const dirData = [
-      { slug: "dentistry", label: "Стоматология", description: "Лечение, протезирование и гигиена полости рта", stat: "до 5 лет", statLabel: "гарантия на лечение", imageUrl: "/image/stomatology.png", sortOrder: 0, services: ["Лечение кариеса", "Профессиональная гигиена", "Протезирование", "Имплантация", "Отбеливание зубов", "Детская стоматология"] },
-      { slug: "cosmetology", label: "Косметология", description: "Уход за кожей, инъекции и аппаратные процедуры", stat: "20+", statLabel: "процедур и методик", imageUrl: "/image/cosmetology.png", sortOrder: 1, services: ["Чистка лица", "Биоревитализация", "Ботулинотерапия", "Контурная пластика", "Пилинги", "Лазерные процедуры"] },
-      { slug: "women", label: "Для женщин", description: "Гинекология, беременность и женское здоровье", stat: "98%", statLabel: "пациентов довольны качеством", imageUrl: "/image/forwoman.webp", sortOrder: 2, services: ["Ведение беременности", "Гинекология", "ЭКО", "УЗИ плода", "Маммология", "Эндокринология"] },
-      { slug: "men", label: "Для мужчин", description: "Урология, андрология и мужской чек-ап", stat: "15+", statLabel: "лет опыта в мужском здоровье", imageUrl: "/image/forman.webp", sortOrder: 3, services: ["Урология", "Андрология", "УЗИ предстательной железы", "Кардиология", "Мужской чек-ап", "Онкоскрининг"] },
-      { slug: "children", label: "Для детей", description: "Педиатрия, неврология и детские прививки", stat: "0–18", statLabel: "лет — принимаем всех детей", imageUrl: "/image/forchild.webp", sortOrder: 4, services: ["Педиатрия", "Детская неврология", "Прививки", "Логопедия", "Детская кардиология", "Детский чек-ап"] },
+      { slug: "dentistry", label: "Стоматология", description: "Лечение, протезирование и гигиена полости рта", stat: "до 5 лет", statLabel: "гарантия на лечение", imageUrl: "/image/stomatology.webp", sortOrder: 0, services: ["Лечение кариеса", "Профессиональная гигиена", "Протезирование", "Имплантация", "Отбеливание зубов", "Детская стоматология"] },
+      { slug: "cosmetology", label: "Косметология", description: "Уход за кожей, инъекции и аппаратные процедуры", stat: "20+", statLabel: "процедур и методик", imageUrl: "/image/cosmetology.webp", sortOrder: 1, services: ["Чистка лица", "Биоревитализация", "Ботулинотерапия", "Контурная пластика", "Пилинги", "Лазерные процедуры"] },
+      { slug: "women", label: "Для женщин", description: "Гинекология, беременность и женское здоровье", stat: "98%", statLabel: "пациентов довольны качеством", imageUrl: "/image/forwoman.webp", sortOrder: 2, services: ["Ведение беременности", "Гинекология", "ЭКО", "УЗИ плода", "Маммология"] },
+      { slug: "men", label: "Для мужчин", description: "Урология, андрология и мужской чек-ап", stat: "15+", statLabel: "лет опыта в мужском здоровье", imageUrl: "/image/forman.webp", sortOrder: 3, services: ["Урология", "Андрология", "УЗИ предстательной железы", "Мужской чек-ап", "Онкоскрининг"] },
+      { slug: "children", label: "Для детей", description: "Педиатрия, прививки и детские чек-апы", stat: "0–18", statLabel: "лет — принимаем всех детей", imageUrl: "/image/forchild.webp", sortOrder: 4, services: ["Педиатрия", "Прививки", "Логопедия", "Детский чек-ап"] },
     ];
     for (const d of dirData) {
       const { services: svcs, ...dir } = d;
       const [created] = await db.insert(directions).values(dir).returning();
-      await db.insert(services).values(
-        svcs.map((name, i) => ({ directionId: created.id, name, sortOrder: i, slug: slugify(name) })),
+      const inserted = await db
+        .insert(services)
+        .values(
+          svcs.map((name, i) => ({ name, sortOrder: i, slug: slugify(name) })),
+        )
+        .returning();
+      await db.insert(serviceDirections).values(
+        inserted.map((s, i) => ({ serviceId: s.id, directionId: created.id, sortOrder: i })),
       );
     }
     console.log("✓ Directions + services seeded");
@@ -75,17 +72,6 @@ async function seed() {
       { tag: "Профилактика", question: "Закаливание реально укрепляет иммунитет?", verdictType: "truth", answer: "Регулярное и постепенное закаливание тренирует сосудистую систему и может снижать частоту простудных заболеваний.", source: "NEJM", sortOrder: 4 },
     ]);
     console.log("✓ Myths seeded");
-  }
-
-  /* ------------------------------ Reviews -------------------------------- */
-  if ((await storage.listReviews()).length === 0) {
-    await db.insert(reviews).values([
-      { name: "Анна Смирнова", date: "март 2024", rating: 5, text: "Очень довольна клиникой. Внимательные врачи, всё объяснили подробно.", platform: "Яндекс Карты", sortOrder: 0 },
-      { name: "Дмитрий Волков", date: "апрель 2024", rating: 5, text: "Прекрасная клиника, современное оборудование и доказательный подход.", platform: "ПроДокторов", sortOrder: 1 },
-      { name: "Елена Козлова", date: "май 2024", rating: 5, text: "Обратилась с ребёнком — приняли быстро, доктор очень добрый.", platform: "Google", sortOrder: 2 },
-      { name: "Игорь Петров", date: "июнь 2024", rating: 5, text: "Прошёл полное обследование, всё чётко и по делу. Рекомендую.", platform: "Яндекс Карты", sortOrder: 3 },
-    ]);
-    console.log("✓ Reviews seeded");
   }
 
   /* ----------------------------- Promotions ------------------------------ */
@@ -107,8 +93,8 @@ async function seed() {
           "Пройдите ультразвуковую диагностику со скидкой 15% — точное исследование на современном оборудовании экспертного класса.",
         body:
           "Акция распространяется на все виды УЗИ в клинике «Медео»: органов брюшной полости, малого таза, щитовидной железы, сосудов, УЗИ плода и предстательной железы.\n\nИсследование проводят врачи ультразвуковой диагностики с большим опытом. Результат вы получаете сразу после процедуры с подробным заключением.\n\nЧтобы воспользоваться скидкой, запишитесь онлайн или по телефону и сообщите администратору про акцию.",
-        imageUrl: "/image/promotions/promo-ultrasound.png",
-        heroImageUrl: "/image/promotions/promo-ultrasound.png",
+        imageUrl: "/image/promotions/promo-ultrasound.webp",
+        heroImageUrl: "/image/promotions/promo-ultrasound.webp",
         serviceIds: ids("uzi-ploda", "uzi-predstatelnoy-zhelezy"),
         metaTitle: "Скидка 15% на УЗИ — ММЦ «Медео»",
         metaDescription:
@@ -126,8 +112,8 @@ async function seed() {
           "SMAS-лифтинг — безоперационная альтернатива подтяжке лица. Скидка 20% и консультация косметолога в подарок.",
         body:
           "SMAS-лифтинг воздействует на глубокий мышечно-апоневротический слой кожи, обеспечивая выраженный эффект подтяжки без операции и реабилитации.\n\nПроцедуру проводит врач-косметолог после индивидуальной консультации, на которой определяются показания и составляется план.\n\nЭффект нарастает в течение нескольких недель и сохраняется надолго. Запишитесь, чтобы получить скидку и бесплатную консультацию.",
-        imageUrl: "/image/promotions/promo-smas.png",
-        heroImageUrl: "/image/promotions/promo-smas.png",
+        imageUrl: "/image/promotions/promo-smas.webp",
+        heroImageUrl: "/image/promotions/promo-smas.webp",
         serviceIds: ids("lazernye-procedury", "konturnaya-plastika"),
         metaTitle: "SMAS-лифтинг со скидкой 20% — ММЦ «Медео»",
         metaDescription:
@@ -145,8 +131,8 @@ async function seed() {
           "Приобретайте абонемент на курс массажа и экономьте: регулярные сеансы заметно эффективнее разовых процедур.",
         body:
           "В клинике «Медео» доступны лечебный, расслабляющий и оздоровительный массаж. Абонемент позволяет пройти полноценный курс по выгодной цене.\n\nПрограмму подбирает специалист с учётом вашего состояния и целей — снятие напряжения, профилактика болей в спине, восстановление.\n\nУточните количество сеансов и стоимость абонемента у администратора при записи.",
-        imageUrl: "/image/promotions/promo-massage.png",
-        heroImageUrl: "/image/promotions/promo-massage.png",
+        imageUrl: "/image/promotions/promo-massage.webp",
+        heroImageUrl: "/image/promotions/promo-massage.webp",
         serviceIds: [],
         metaTitle: "Абонементы на массаж — ММЦ «Медео»",
         metaDescription:
@@ -164,8 +150,8 @@ async function seed() {
           "Комплексное гинекологическое обследование: консультация, осмотр и УЗИ — всё для контроля женского здоровья по единой цене.",
         body:
           "Программа включает приём врача-гинеколога, забор анализов и ультразвуковое исследование органов малого таза.\n\nКомплексный подход позволяет вовремя выявить изменения и составить план наблюдения или лечения.\n\nЗапишитесь на удобное время — администратор расскажет, что входит в обследование и как к нему подготовиться.",
-        imageUrl: "/image/promotions/promo-consultation.png",
-        heroImageUrl: "/image/promotions/promo-consultation.png",
+        imageUrl: "/image/promotions/promo-consultation.webp",
+        heroImageUrl: "/image/promotions/promo-consultation.webp",
         serviceIds: ids("ginekologiya", "uzi-ploda"),
         metaTitle: "Комплексное обследование у гинеколога — ММЦ «Медео»",
         metaDescription:
@@ -183,8 +169,8 @@ async function seed() {
           "РФ-лифтинг подтягивает кожу и разглаживает морщины за счёт радиочастотного прогрева. Скидка 80% на первую процедуру.",
         body:
           "Радиочастотный лифтинг стимулирует выработку собственного коллагена, делая кожу более плотной и упругой. Процедура комфортная и не требует реабилитации.\n\nКосметолог проведёт бесплатную консультацию, оценит состояние кожи и подберёт количество процедур для стойкого результата.\n\nКоличество мест по акции ограничено — запишитесь заранее.",
-        imageUrl: "/image/promotions/promo-rf.png",
-        heroImageUrl: "/image/promotions/promo-rf.png",
+        imageUrl: "/image/promotions/promo-rf.webp",
+        heroImageUrl: "/image/promotions/promo-rf.webp",
         serviceIds: ids("lazernye-procedury", "konturnaya-plastika"),
         metaTitle: "РФ-лифтинг со скидкой 80% — ММЦ «Медео»",
         metaDescription:
@@ -202,8 +188,8 @@ async function seed() {
           "До конца года первичные консультации врачей клиники «Медео» доступны по специальной цене.",
         body:
           "Предложение действует на первичные приёмы специалистов клиники. Это удобный повод пройти обследование, получить второе мнение или начать наблюдение у нужного врача.\n\nНа приёме врач соберёт анамнез, проведёт осмотр и при необходимости составит план диагностики и лечения.\n\nУточните перечень специалистов, участвующих в акции, у администратора при записи.",
-        imageUrl: "/image/promotions/promo-consultation.png",
-        heroImageUrl: "/image/promotions/promo-consultation.png",
+        imageUrl: "/image/promotions/promo-consultation.webp",
+        heroImageUrl: "/image/promotions/promo-consultation.webp",
         serviceIds: [],
         metaTitle: "Консультации врачей по спеццене — ММЦ «Медео»",
         metaDescription:
@@ -221,8 +207,8 @@ async function seed() {
           "Станьте моделью клиники «Медео» и получите косметологические процедуры со скидкой 50%.",
         body:
           "Мы приглашаем пациентов поучаствовать в программе «Модель клиники»: вы получаете процедуры со скидкой 50%, а мы — возможность показать результаты нашей работы.\n\nВсе процедуры выполняют опытные врачи-косметологи с соблюдением протоколов безопасности.\n\nУсловия участия и список доступных процедур уточняйте у администратора.",
-        imageUrl: "/image/promotions/promo-model.png",
-        heroImageUrl: "/image/promotions/promo-model.png",
+        imageUrl: "/image/promotions/promo-model.webp",
+        heroImageUrl: "/image/promotions/promo-model.webp",
         serviceIds: ids("chistka-lica", "biorevitalizaciya"),
         metaTitle: "Стань моделью клиники — косметология −50% — ММЦ «Медео»",
         metaDescription:
@@ -240,8 +226,8 @@ async function seed() {
           "Естественное увеличение и коррекция формы губ препаратом VISCOLINE LIPS (1 мл) по специальной цене.",
         body:
           "Контурная пластика губ помогает добавить объём, скорректировать форму и увлажнить кожу губ. Используется сертифицированный филлер на основе гиалуроновой кислоты.\n\nПроцедуру проводит врач-косметолог после консультации, с учётом ваших пожеланий и анатомии.\n\nЗапишитесь, чтобы уточнить стоимость по акции и подобрать удобное время.",
-        imageUrl: "/image/promotions/promo-lips.png",
-        heroImageUrl: "/image/promotions/promo-lips.png",
+        imageUrl: "/image/promotions/promo-lips.webp",
+        heroImageUrl: "/image/promotions/promo-lips.webp",
         serviceIds: ids("konturnaya-plastika"),
         metaTitle: "Увеличение губ VISCOLINE LIPS — ММЦ «Медео»",
         metaDescription:
@@ -259,8 +245,8 @@ async function seed() {
           "Курс физиолечения в урологии из 10 сеансов — 27 000 ₽ вместо 35 000 ₽. Эффективная поддержка мужского здоровья.",
         body:
           "Физиотерапия применяется в комплексном лечении урологических заболеваний: помогает снять воспаление, улучшить кровообращение и закрепить результат основного лечения.\n\nКурс назначает врач-уролог после осмотра и обследования, с учётом показаний и противопоказаний.\n\nЗапишитесь на консультацию, чтобы начать курс по акционной цене.",
-        imageUrl: "/image/promotions/promo-urology.png",
-        heroImageUrl: "/image/promotions/promo-urology.png",
+        imageUrl: "/image/promotions/promo-urology.webp",
+        heroImageUrl: "/image/promotions/promo-urology.webp",
         serviceIds: ids("urologiya", "andrologiya"),
         metaTitle: "Физиолечение в урологии, 10 сеансов — ММЦ «Медео»",
         metaDescription:
@@ -278,8 +264,8 @@ async function seed() {
           "Избавьтесь от второго подбородка за одну процедуру — современная коррекция овала лица без операции.",
         body:
           "Коррекция зоны подбородка помогает убрать локальные жировые отложения и подтянуть овал лица. Метод подбирается индивидуально на консультации косметолога.\n\nПроцедура проходит комфортно и не требует длительного восстановления, а результат заметен уже после первого визита.\n\nЗапишитесь на консультацию, чтобы подобрать оптимальное решение и узнать стоимость.",
-        imageUrl: "/image/promotions/promo-chin.png",
-        heroImageUrl: "/image/promotions/promo-chin.png",
+        imageUrl: "/image/promotions/promo-chin.webp",
+        heroImageUrl: "/image/promotions/promo-chin.webp",
         serviceIds: ids("konturnaya-plastika", "lazernye-procedury"),
         metaTitle: "Коррекция второго подбородка за 1 процедуру — ММЦ «Медео»",
         metaDescription:
@@ -293,12 +279,41 @@ async function seed() {
     console.log("✓ Promotions seeded");
   }
 
+  /* ------------------------------ Stories -------------------------------- */
+  if ((await storage.listStories()).length === 0) {
+    await db.insert(stories).values([
+      {
+        tag: "Гинекология · острый случай",
+        title: "УЗИ, которое спасло жизнь",
+        imageUrl: "",
+        body: "Пациентка пришла на УЗИ к гинекологу Светлане Александровне Няниной с жалобами на боль внизу живота. Врач заподозрила острый аппендицит и воспаление в малом тазу — и, не теряя времени, вызвала бригаду скорой помощи.\n\nПациентку срочно госпитализировали и в тот же день прооперировали.",
+        noteKind: "quote",
+        noteLabel: "Первое сообщение — в тот же вечер из больницы",
+        noteText: "«Прооперировали: удалили маточные трубы и аппендикс. Пельвеоперитонит и аппендицит вместе».",
+        author: "Светлана Александровна Нянина · врач-гинеколог",
+        sortOrder: 0,
+      },
+      {
+        tag: "Урология · клинический случай",
+        title: "Когда нельзя откладывать визит",
+        imageUrl: "",
+        body: "Мужчина 52 лет обратился с затруднённым мочеиспусканием и болью в уретре, которая длилась уже пять дней. С мочой начали отходить камни: один вышел самостоятельно, а второй застрял в мочеиспускательном канале.\n\nПри осмотре врач прощупал плотное образование и аккуратно извлёк камень специальным зажимом — размером 1,3 × 0,9 см.",
+        noteKind: "info",
+        noteLabel: "Если камень не извлечь консервативно",
+        noteText: "В условиях стационара проводят оптическую уретролитотомию — малоинвазивную операцию, которая безопасно удаляет конкремент из мочеиспускательного канала.",
+        author: "Урологический приём ММЦ «МЕДЕО»",
+        sortOrder: 1,
+      },
+    ]);
+    console.log("✓ Stories seeded");
+  }
+
   /* ------------------------------ Benefits ------------------------------- */
   if ((await storage.listBenefits()).length === 0) {
     await db.insert(benefits).values([
       { title: "Доказательная медицина", text: "Забота, основанная на доказательной медицине и проверенных протоколах.", icon: "shield-check", sortOrder: 0 },
       { title: "Для всей семьи", text: "Мы рядом на любом этапе жизни — от детей до взрослых.", icon: "users", sortOrder: 1 },
-      { title: "Современные технологии", text: "ИИ и современное оборудование для точной диагностики.", icon: "cpu", sortOrder: 2 },
+      { title: "Современные технологии", text: "Современное оборудование экспертного класса для точной и быстрой диагностики.", icon: "cpu", sortOrder: 2 },
       { title: "Внимание к деталям", text: "Вкусный чай, носочки, юбочки — заботимся о комфорте.", icon: "heart", sortOrder: 3 },
     ]);
     console.log("✓ Benefits seeded");
@@ -307,10 +322,10 @@ async function seed() {
   /* ------------------------------ Nav links ------------------------------ */
   if ((await storage.listNavLinks()).length === 0) {
     await db.insert(navLinks).values([
-      { label: "О клинике", href: "#about", group: "main", sortOrder: 0 },
+      { label: "О клинике", href: "/o-klinike", group: "main", sortOrder: 0 },
       { label: "Услуги", href: "#services", group: "main", sortOrder: 1 },
       { label: "Врачи", href: "/vrachi", group: "main", sortOrder: 2 },
-      { label: "Пациентам", href: "#patients", group: "main", sortOrder: 3 },
+      { label: "Пациентам", href: "/patients", group: "main", sortOrder: 3 },
       { label: "Цены", href: "/prices", group: "main", sortOrder: 4 },
       { label: "Акции", href: "/akcii", group: "main", sortOrder: 5 },
       { label: "Контакты", href: "/contacts", group: "main", sortOrder: 6 },
@@ -336,10 +351,6 @@ async function seed() {
   {
     const SERVICE_CATEGORY_LINKS: Record<string, string> = {
       "Гинекология": "Гинекология",
-      "Эндокринология": "Эндокринология",
-      "Кардиология": "Кардиология",
-      "Детская кардиология": "Кардиология",
-      "Детская неврология": "Неврология",
       "Урология": "Урология и андрология",
       "Андрология": "Урология и андрология",
       "Чистка лица": "Косметология",
@@ -353,17 +364,70 @@ async function seed() {
     };
     const cats = await storage.listPriceCategories();
     const catByName = new Map(cats.map((c) => [c.name, c.id] as const));
+    const allItems = await storage.listPriceItems();
     const allServices = await db.select().from(services);
+    const existingLinks = await storage.listServicePriceItems();
+    const linkedSvc = new Set(existingLinks.map((l) => l.serviceId));
     let linked = 0;
     for (const s of allServices) {
-      if (s.priceCategoryId) continue;
+      if (linkedSvc.has(s.id)) continue;
       const catId = catByName.get(SERVICE_CATEGORY_LINKS[s.name] ?? "");
-      if (catId) {
-        await storage.updateService(s.id, { priceCategoryId: catId });
-        linked++;
+      if (!catId) continue;
+      const itemIds = allItems.filter((i) => i.categoryId === catId).map((i) => i.id);
+      if (itemIds.length === 0) continue;
+      await storage.setServicePriceItems(s.id, itemIds);
+      linked++;
+    }
+    if (linked) console.log(`✓ Услуги связаны с процедурами каталога (${linked})`);
+  }
+
+  /* ------- Сквозные услуги в нескольких направлениях (идемпотентно) ------ */
+  // Часть услуг логично показывать сразу в нескольких аудиторных разделах
+  // (например, эстетические процедуры — и «Для женщин», и «Для мужчин»).
+  // Услуга редактируется один раз, а появляется в каждом из направлений.
+  // Первое направление (исходное) остаётся primary — задаёт акцент страницы.
+  {
+    const CROSS_CUTTING: Record<string, string[]> = {
+      // Косметология востребована и в женском, и в мужском разделах
+      "chistka-lica": ["women", "men"],
+      "botulinoterapiya": ["women", "men"],
+      "lazernye-procedury": ["women", "men"],
+      "biorevitalizaciya": ["women"],
+      "konturnaya-plastika": ["women"],
+      "pilingi": ["women"],
+      // Онкоскрининг актуален не только для мужчин
+      "onkoskrining": ["women"],
+    };
+    const allServices = await db.select().from(services);
+    const svcBySlug = new Map(allServices.map((s) => [s.slug, s.id] as const));
+    const dirBySlug = new Map(
+      (await storage.listDirections(false)).map((d) => [d.slug, d.id] as const),
+    );
+    const links = await storage.listServiceDirections();
+    const linksBySvc = new Map<string, Set<string>>();
+    const countBySvc = new Map<string, number>();
+    for (const l of links) {
+      if (!linksBySvc.has(l.serviceId)) linksBySvc.set(l.serviceId, new Set());
+      linksBySvc.get(l.serviceId)!.add(l.directionId);
+      countBySvc.set(l.serviceId, (countBySvc.get(l.serviceId) ?? 0) + 1);
+    }
+    const toInsert: Array<{ serviceId: string; directionId: string; sortOrder: number }> = [];
+    for (const [svcSlug, dirSlugs] of Object.entries(CROSS_CUTTING)) {
+      const serviceId = svcBySlug.get(svcSlug);
+      if (!serviceId) continue;
+      const existing = linksBySvc.get(serviceId) ?? new Set<string>();
+      let order = countBySvc.get(serviceId) ?? 0;
+      for (const dirSlug of dirSlugs) {
+        const directionId = dirBySlug.get(dirSlug);
+        if (!directionId || existing.has(directionId)) continue;
+        toInsert.push({ serviceId, directionId, sortOrder: order++ });
+        existing.add(directionId);
       }
     }
-    if (linked) console.log(`✓ Услуги связаны с категориями каталога (${linked})`);
+    if (toInsert.length) {
+      await db.insert(serviceDirections).values(toInsert).onConflictDoNothing();
+      console.log(`✓ Сквозные услуги связаны с доп. направлениями (${toInsert.length})`);
+    }
   }
 
   /* -------- Разделы-специальности из категорий прайса (идемпотентно) ------ */
@@ -380,12 +444,6 @@ async function seed() {
       { category: "Дерматология", slug: "dermatologiya", label: "Дерматология", heroTitle: "Дерматология и лечение кожи",
         intro: "Диагностика и лечение заболеваний кожи, волос и ногтей.",
         description: "Диагностика и лечение кожи", accent: "#a16207" },
-      { category: "Терапия", slug: "terapiya", label: "Терапия", heroTitle: "Приём врача-терапевта",
-        intro: "Первичный приём, диагностика и лечение у врача-терапевта.",
-        description: "Приём и лечение у терапевта", accent: "#1e3a5f" },
-      { category: "Гастроэнтерология", slug: "gastroenterologiya", label: "Гастроэнтерология", heroTitle: "Гастроэнтерология",
-        intro: "Диагностика и лечение заболеваний желудочно-кишечного тракта.",
-        description: "Здоровье пищеварительной системы", accent: "#b45309" },
       { category: "Функциональная диагностика", slug: "funkcionalnaya-diagnostika", label: "Функциональная диагностика", heroTitle: "Функциональная диагностика",
         intro: "ЭКГ, СМАД, холтер и другие функциональные исследования.",
         description: "ЭКГ, холтер, СМАД и другие исследования", accent: "#0f766e" },

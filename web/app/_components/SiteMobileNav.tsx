@@ -94,10 +94,10 @@ export const SiteMobileNav = (): JSX.Element => {
               className="flex flex-col items-center gap-1 py-3 px-4"
               data-testid={`mobile-nav-${item.label.toLowerCase()}`}
             >
-              <div className="flex h-12 w-12 items-center justify-center rounded-full bg-[#007d83] shadow-lg shadow-[#007d83]/30 -mt-5">
+              <div className="flex h-12 w-12 items-center justify-center rounded-full bg-[#005eb8] shadow-lg shadow-[#005eb8]/30 -mt-5">
                 {item.icon(isActive)}
               </div>
-              <span className="text-[10px] font-medium text-[#007d83] mt-0.5">{item.label}</span>
+              <span className="text-[10px] font-medium text-[#005eb8] mt-0.5">{item.label}</span>
             </button>
           );
         }
@@ -109,19 +109,19 @@ export const SiteMobileNav = (): JSX.Element => {
             onClick={() => handleClick(item)}
             className="flex flex-col items-center gap-1 py-3 px-4 transition-colors"
             data-testid={`mobile-nav-${item.label.toLowerCase()}`}
-            style={{ color: isActive ? "#007d83" : "#9ca3af" }}
+            style={{ color: isActive ? "#005eb8" : "#9ca3af" }}
           >
             <div className="relative">
               {item.icon(isActive)}
               {isActive && (
                 <span
-                  className="absolute -bottom-1.5 left-1/2 -translate-x-1/2 h-1 w-1 rounded-full bg-[#007d83]"
+                  className="absolute -bottom-1.5 left-1/2 -translate-x-1/2 h-1 w-1 rounded-full bg-[#005eb8]"
                 />
               )}
             </div>
             <span
               className="text-[10px] font-medium transition-colors"
-              style={{ color: isActive ? "#007d83" : "#9ca3af" }}
+              style={{ color: isActive ? "#005eb8" : "#9ca3af" }}
             >
               {item.label}
             </span>

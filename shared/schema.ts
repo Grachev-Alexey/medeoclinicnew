@@ -7,6 +7,7 @@ import {
   boolean,
   timestamp,
   jsonb,
+  primaryKey,
 } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
@@ -67,6 +68,12 @@ export const doctors = pgTable("doctors", {
   quote: text("quote").default("").notNull(),
   about: text("about").default("").notNull(),
   credentials: text("credentials").array().default(sql`'{}'::text[]`).notNull(),
+  prodoctorovUrl: text("prodoctorov_url").default("").notNull(),
+  prodoctorovRating: text("prodoctorov_rating").default("").notNull(),
+  prodoctorovReviews: text("prodoctorov_reviews").default("").notNull(),
+  yandexUrl: text("yandex_url").default("").notNull(),
+  yandexRating: text("yandex_rating").default("").notNull(),
+  yandexReviews: text("yandex_reviews").default("").notNull(),
   available: boolean("available").default(true).notNull(),
   availableDate: text("available_date").default("").notNull(),
   sortOrder: integer("sort_order").default(0).notNull(),
@@ -125,14 +132,6 @@ export type Direction = typeof directions.$inferSelect;
 
 export const services = pgTable("services", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
-  directionId: varchar("direction_id")
-    .notNull()
-    .references(() => directions.id, { onDelete: "cascade" }),
-  // Optional link to a price-catalog category, so the service page can list the
-  // concrete procedures/prices for this service. Managed in the admin.
-  priceCategoryId: varchar("price_category_id").references(() => priceCategories.id, {
-    onDelete: "set null",
-  }),
   name: text("name").notNull(),
   sortOrder: integer("sort_order").default(0).notNull(),
   // Service-page content (shared template at /uslugi/[slug])
@@ -155,6 +154,30 @@ export const insertServiceSchema = createInsertSchema(services)
   });
 export type InsertService = z.infer<typeof insertServiceSchema>;
 export type Service = typeof services.$inferSelect;
+
+/* -------------------------------------------------------------------------- */
+/*  Service ↔ Direction (many-to-many)                                        */
+/*  One service can be shown in several directions; edited in one place. The  */
+/*  direction page renders it in that direction's accent colour.              */
+/* -------------------------------------------------------------------------- */
+
+export const serviceDirections = pgTable(
+  "service_directions",
+  {
+    serviceId: varchar("service_id")
+      .notNull()
+      .references(() => services.id, { onDelete: "cascade" }),
+    directionId: varchar("direction_id")
+      .notNull()
+      .references(() => directions.id, { onDelete: "cascade" }),
+    sortOrder: integer("sort_order").default(0).notNull(),
+  },
+  (t) => ({ pk: primaryKey({ columns: [t.serviceId, t.directionId] }) }),
+);
+
+export const insertServiceDirectionSchema = createInsertSchema(serviceDirections);
+export type InsertServiceDirection = z.infer<typeof insertServiceDirectionSchema>;
+export type ServiceDirection = typeof serviceDirections.$inferSelect;
 
 /* -------------------------------------------------------------------------- */
 /*  Prices (categories + items)                                               */
@@ -190,6 +213,30 @@ export type InsertPriceItem = z.infer<typeof insertPriceItemSchema>;
 export type PriceItem = typeof priceItems.$inferSelect;
 
 /* -------------------------------------------------------------------------- */
+/*  Service ↔ Price item (many-to-many)                                       */
+/*  The procedures (price items) hand-picked for a service via checkboxes —   */
+/*  shown as the "сопутствующие услуги" block on the service page.            */
+/* -------------------------------------------------------------------------- */
+
+export const servicePriceItems = pgTable(
+  "service_price_items",
+  {
+    serviceId: varchar("service_id")
+      .notNull()
+      .references(() => services.id, { onDelete: "cascade" }),
+    priceItemId: varchar("price_item_id")
+      .notNull()
+      .references(() => priceItems.id, { onDelete: "cascade" }),
+    sortOrder: integer("sort_order").default(0).notNull(),
+  },
+  (t) => ({ pk: primaryKey({ columns: [t.serviceId, t.priceItemId] }) }),
+);
+
+export const insertServicePriceItemSchema = createInsertSchema(servicePriceItems);
+export type InsertServicePriceItem = z.infer<typeof insertServicePriceItemSchema>;
+export type ServicePriceItem = typeof servicePriceItems.$inferSelect;
+
+/* -------------------------------------------------------------------------- */
 /*  Myths (MythBuster section)                                                 */
 /* -------------------------------------------------------------------------- */
 
@@ -209,27 +256,6 @@ export const insertMythSchema = createInsertSchema(myths).omit({
 });
 export type InsertMyth = z.infer<typeof insertMythSchema>;
 export type Myth = typeof myths.$inferSelect;
-
-/* -------------------------------------------------------------------------- */
-/*  Reviews (testimonials)                                                     */
-/* -------------------------------------------------------------------------- */
-
-export const reviews = pgTable("reviews", {
-  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
-  name: text("name").notNull(),
-  date: text("date").default("").notNull(),
-  rating: integer("rating").default(5).notNull(),
-  text: text("text").notNull(),
-  platform: text("platform").default("").notNull(),
-  sortOrder: integer("sort_order").default(0).notNull(),
-  active: boolean("active").default(true).notNull(),
-});
-
-export const insertReviewSchema = createInsertSchema(reviews).omit({
-  id: true,
-});
-export type InsertReview = z.infer<typeof insertReviewSchema>;
-export type Review = typeof reviews.$inferSelect;
 
 /* -------------------------------------------------------------------------- */
 /*  Promotions                                                                 */
@@ -261,6 +287,30 @@ export type InsertPromotion = z.infer<typeof insertPromotionSchema>;
 export type Promotion = typeof promotions.$inferSelect;
 
 /* -------------------------------------------------------------------------- */
+/*  Stories (real clinic patient stories)                                      */
+/* -------------------------------------------------------------------------- */
+
+export const stories = pgTable("stories", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  tag: text("tag").default("").notNull(),
+  title: text("title").notNull(),
+  imageUrl: text("image_url").default("").notNull(),
+  body: text("body").default("").notNull(),
+  noteKind: text("note_kind").default("quote").notNull(),
+  noteLabel: text("note_label").default("").notNull(),
+  noteText: text("note_text").default("").notNull(),
+  author: text("author").default("").notNull(),
+  sortOrder: integer("sort_order").default(0).notNull(),
+  active: boolean("active").default(true).notNull(),
+});
+
+export const insertStorySchema = createInsertSchema(stories).omit({
+  id: true,
+});
+export type InsertStory = z.infer<typeof insertStorySchema>;
+export type Story = typeof stories.$inferSelect;
+
+/* -------------------------------------------------------------------------- */
 /*  Benefits                                                                   */
 /* -------------------------------------------------------------------------- */
 
@@ -278,23 +328,6 @@ export const insertBenefitSchema = createInsertSchema(benefits).omit({
 });
 export type InsertBenefit = z.infer<typeof insertBenefitSchema>;
 export type Benefit = typeof benefits.$inferSelect;
-
-/* -------------------------------------------------------------------------- */
-/*  Hero statistics                                                            */
-/* -------------------------------------------------------------------------- */
-
-export const stats = pgTable("stats", {
-  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
-  value: text("value").notNull(),
-  label: text("label").notNull(),
-  sortOrder: integer("sort_order").default(0).notNull(),
-});
-
-export const insertStatSchema = createInsertSchema(stats).omit({
-  id: true,
-});
-export type InsertStat = z.infer<typeof insertStatSchema>;
-export type Stat = typeof stats.$inferSelect;
 
 /* -------------------------------------------------------------------------- */
 /*  Navigation links                                                          */
@@ -327,28 +360,3 @@ export const siteSettings = pgTable("site_settings", {
 export const insertSiteSettingSchema = createInsertSchema(siteSettings);
 export type InsertSiteSetting = z.infer<typeof insertSiteSettingSchema>;
 export type SiteSetting = typeof siteSettings.$inferSelect;
-
-/* -------------------------------------------------------------------------- */
-/*  Bookings (online appointment lead requests)                               */
-/* -------------------------------------------------------------------------- */
-
-export const bookings = pgTable("bookings", {
-  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
-  name: text("name").notNull(),
-  phone: text("phone").notNull(),
-  preferredAt: text("preferred_at").default("").notNull(),
-  directionId: varchar("direction_id").references(() => directions.id, {
-    onDelete: "set null",
-  }),
-  directionLabel: text("direction_label").default("").notNull(),
-  status: text("status").default("new").notNull(),
-  createdAt: timestamp("created_at").defaultNow().notNull(),
-});
-
-export const insertBookingSchema = createInsertSchema(bookings).omit({
-  id: true,
-  status: true,
-  createdAt: true,
-});
-export type InsertBooking = z.infer<typeof insertBookingSchema>;
-export type Booking = typeof bookings.$inferSelect;

@@ -7,7 +7,7 @@ import { SiteHeader } from "./SiteHeader";
 import { SiteFooter } from "./SiteFooter";
 import { SiteMobileNav } from "./SiteMobileNav";
 
-const ACCENT = "#007d83";
+const ACCENT = "#005eb8";
 
 const rgba = (hex: string, a: number) => {
   const r = parseInt(hex.slice(1, 3), 16);

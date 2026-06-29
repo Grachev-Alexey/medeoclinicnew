@@ -6,16 +6,16 @@ import {
   doctors,
   directions,
   services,
+  serviceDirections,
+  servicePriceItems,
   priceCategories,
   priceItems,
   myths,
-  reviews,
   promotions,
+  stories,
   benefits,
-  stats,
   navLinks,
   siteSettings,
-  bookings,
   type User,
   type InsertUser,
   type MediaAsset,
@@ -26,26 +26,26 @@ import {
   type InsertDirection,
   type Service,
   type InsertService,
+  type ServiceDirection,
+  type ServicePriceItem,
   type PriceCategory,
   type InsertPriceCategory,
   type PriceItem,
   type InsertPriceItem,
   type Myth,
   type InsertMyth,
-  type Review,
-  type InsertReview,
   type Promotion,
   type InsertPromotion,
+  type Story,
+  type InsertStory,
   type Benefit,
   type InsertBenefit,
-  type Stat,
-  type InsertStat,
   type NavLink,
   type InsertNavLink,
   type SiteSetting,
-  type Booking,
-  type InsertBooking,
 } from "@shared/schema";
+
+type DbExecutor = typeof db | Parameters<Parameters<(typeof db)["transaction"]>[0]>[0];
 
 const TRANSLIT: Record<string, string> = {
   а:"a",б:"b",в:"v",г:"g",д:"d",е:"e",ё:"e",ж:"zh",з:"z",и:"i",й:"y",к:"k",л:"l",
@@ -96,7 +96,23 @@ export interface IStorage {
   getServiceBySlug(slug: string): Promise<Service | undefined>;
   createService(data: InsertService): Promise<Service>;
   updateService(id: string, data: Partial<InsertService>): Promise<Service | undefined>;
+  createServiceWithRelations(
+    data: InsertService,
+    directionIds: string[],
+    priceItemIds: string[],
+  ): Promise<Service>;
+  updateServiceWithRelations(
+    id: string,
+    data: Partial<InsertService>,
+    directionIds?: string[],
+    priceItemIds?: string[],
+  ): Promise<Service | undefined>;
   deleteService(id: string): Promise<void>;
+  // Service ↔ direction / price-item links (many-to-many)
+  listServiceDirections(): Promise<ServiceDirection[]>;
+  setServiceDirections(serviceId: string, directionIds: string[]): Promise<void>;
+  listServicePriceItems(): Promise<ServicePriceItem[]>;
+  setServicePriceItems(serviceId: string, priceItemIds: string[]): Promise<void>;
 
   // Prices
   listPriceCategories(): Promise<PriceCategory[]>;
@@ -114,11 +130,6 @@ export interface IStorage {
   updateMyth(id: string, data: Partial<InsertMyth>): Promise<Myth | undefined>;
   deleteMyth(id: string): Promise<void>;
 
-  // Reviews
-  listReviews(onlyActive?: boolean): Promise<Review[]>;
-  createReview(data: InsertReview): Promise<Review>;
-  updateReview(id: string, data: Partial<InsertReview>): Promise<Review | undefined>;
-  deleteReview(id: string): Promise<void>;
 
   // Promotions
   listPromotions(onlyActive?: boolean): Promise<Promotion[]>;
@@ -127,17 +138,17 @@ export interface IStorage {
   updatePromotion(id: string, data: Partial<InsertPromotion>): Promise<Promotion | undefined>;
   deletePromotion(id: string): Promise<void>;
 
+  // Stories
+  listStories(onlyActive?: boolean): Promise<Story[]>;
+  createStory(data: InsertStory): Promise<Story>;
+  updateStory(id: string, data: Partial<InsertStory>): Promise<Story | undefined>;
+  deleteStory(id: string): Promise<void>;
+
   // Benefits
   listBenefits(onlyActive?: boolean): Promise<Benefit[]>;
   createBenefit(data: InsertBenefit): Promise<Benefit>;
   updateBenefit(id: string, data: Partial<InsertBenefit>): Promise<Benefit | undefined>;
   deleteBenefit(id: string): Promise<void>;
-
-  // Stats
-  listStats(): Promise<Stat[]>;
-  createStat(data: InsertStat): Promise<Stat>;
-  updateStat(id: string, data: Partial<InsertStat>): Promise<Stat | undefined>;
-  deleteStat(id: string): Promise<void>;
 
   // Nav links
   listNavLinks(onlyActive?: boolean): Promise<NavLink[]>;
@@ -145,11 +156,6 @@ export interface IStorage {
   updateNavLink(id: string, data: Partial<InsertNavLink>): Promise<NavLink | undefined>;
   deleteNavLink(id: string): Promise<void>;
 
-  // Bookings (online lead requests)
-  listBookings(): Promise<Booking[]>;
-  createBooking(data: InsertBooking): Promise<Booking>;
-  updateBooking(id: string, data: Partial<Booking>): Promise<Booking | undefined>;
-  deleteBooking(id: string): Promise<void>;
 
   // Site settings
   getAllSettings(): Promise<Record<string, unknown>>;
@@ -263,7 +269,68 @@ export class DbStorage implements IStorage {
   }
   async listServices(directionId?: string) {
     const rows = await db.select().from(services).orderBy(asc(services.sortOrder));
-    return directionId ? rows.filter((r) => r.directionId === directionId) : rows;
+    if (!directionId) return rows;
+    const links = await db
+      .select()
+      .from(serviceDirections)
+      .where(eq(serviceDirections.directionId, directionId));
+    const ids = new Set(links.map((l) => l.serviceId));
+    return rows.filter((r) => ids.has(r.id));
+  }
+  async listServiceDirections() {
+    return db.select().from(serviceDirections).orderBy(asc(serviceDirections.sortOrder));
+  }
+  private async _setServiceDirections(exec: DbExecutor, serviceId: string, directionIds: string[]) {
+    await exec.delete(serviceDirections).where(eq(serviceDirections.serviceId, serviceId));
+    const unique = Array.from(new Set(directionIds.filter(Boolean)));
+    if (unique.length === 0) return;
+    await exec.insert(serviceDirections).values(
+      unique.map((directionId, i) => ({ serviceId, directionId, sortOrder: i })),
+    );
+  }
+  async setServiceDirections(serviceId: string, directionIds: string[]) {
+    await this._setServiceDirections(db, serviceId, directionIds);
+  }
+  async listServicePriceItems() {
+    return db.select().from(servicePriceItems).orderBy(asc(servicePriceItems.sortOrder));
+  }
+  private async _setServicePriceItems(exec: DbExecutor, serviceId: string, priceItemIds: string[]) {
+    await exec.delete(servicePriceItems).where(eq(servicePriceItems.serviceId, serviceId));
+    const unique = Array.from(new Set(priceItemIds.filter(Boolean)));
+    if (unique.length === 0) return;
+    await exec.insert(servicePriceItems).values(
+      unique.map((priceItemId, i) => ({ serviceId, priceItemId, sortOrder: i })),
+    );
+  }
+  async setServicePriceItems(serviceId: string, priceItemIds: string[]) {
+    await this._setServicePriceItems(db, serviceId, priceItemIds);
+  }
+  async createServiceWithRelations(
+    data: InsertService,
+    directionIds: string[],
+    priceItemIds: string[],
+  ) {
+    return db.transaction(async (tx) => {
+      const slug = data.slug && data.slug.trim() ? data.slug.trim() : await this.uniqueServiceSlug(data.name);
+      const [row] = await tx.insert(services).values({ ...data, slug }).returning();
+      await this._setServiceDirections(tx, row.id, directionIds);
+      await this._setServicePriceItems(tx, row.id, priceItemIds);
+      return row;
+    });
+  }
+  async updateServiceWithRelations(
+    id: string,
+    data: Partial<InsertService>,
+    directionIds?: string[],
+    priceItemIds?: string[],
+  ) {
+    return db.transaction(async (tx) => {
+      const [row] = await tx.update(services).set(data).where(eq(services.id, id)).returning();
+      if (!row) return undefined;
+      if (directionIds) await this._setServiceDirections(tx, row.id, directionIds);
+      if (priceItemIds) await this._setServicePriceItems(tx, row.id, priceItemIds);
+      return row;
+    });
   }
   async getServiceBySlug(slug: string) {
     const [row] = await db.select().from(services).where(eq(services.slug, slug));
@@ -338,23 +405,6 @@ export class DbStorage implements IStorage {
     await db.delete(myths).where(eq(myths.id, id));
   }
 
-  // ---- Reviews ----
-  async listReviews(onlyActive = false) {
-    const rows = await db.select().from(reviews).orderBy(asc(reviews.sortOrder));
-    return onlyActive ? rows.filter((r) => r.active) : rows;
-  }
-  async createReview(data: InsertReview) {
-    const [row] = await db.insert(reviews).values(data).returning();
-    return row;
-  }
-  async updateReview(id: string, data: Partial<InsertReview>) {
-    const [row] = await db.update(reviews).set(data).where(eq(reviews.id, id)).returning();
-    return row;
-  }
-  async deleteReview(id: string) {
-    await db.delete(reviews).where(eq(reviews.id, id));
-  }
-
   // ---- Promotions ----
   async listPromotions(onlyActive = false) {
     const rows = await db.select().from(promotions).orderBy(asc(promotions.sortOrder));
@@ -389,6 +439,23 @@ export class DbStorage implements IStorage {
     await db.delete(promotions).where(eq(promotions.id, id));
   }
 
+  // ---- Stories ----
+  async listStories(onlyActive = false) {
+    const rows = await db.select().from(stories).orderBy(asc(stories.sortOrder));
+    return onlyActive ? rows.filter((r) => r.active) : rows;
+  }
+  async createStory(data: InsertStory) {
+    const [row] = await db.insert(stories).values(data).returning();
+    return row;
+  }
+  async updateStory(id: string, data: Partial<InsertStory>) {
+    const [row] = await db.update(stories).set(data).where(eq(stories.id, id)).returning();
+    return row;
+  }
+  async deleteStory(id: string) {
+    await db.delete(stories).where(eq(stories.id, id));
+  }
+
   // ---- Benefits ----
   async listBenefits(onlyActive = false) {
     const rows = await db.select().from(benefits).orderBy(asc(benefits.sortOrder));
@@ -406,22 +473,6 @@ export class DbStorage implements IStorage {
     await db.delete(benefits).where(eq(benefits.id, id));
   }
 
-  // ---- Stats ----
-  async listStats() {
-    return db.select().from(stats).orderBy(asc(stats.sortOrder));
-  }
-  async createStat(data: InsertStat) {
-    const [row] = await db.insert(stats).values(data).returning();
-    return row;
-  }
-  async updateStat(id: string, data: Partial<InsertStat>) {
-    const [row] = await db.update(stats).set(data).where(eq(stats.id, id)).returning();
-    return row;
-  }
-  async deleteStat(id: string) {
-    await db.delete(stats).where(eq(stats.id, id));
-  }
-
   // ---- Nav links ----
   async listNavLinks(onlyActive = false) {
     const rows = await db.select().from(navLinks).orderBy(asc(navLinks.sortOrder));
@@ -437,22 +488,6 @@ export class DbStorage implements IStorage {
   }
   async deleteNavLink(id: string) {
     await db.delete(navLinks).where(eq(navLinks.id, id));
-  }
-
-  // ---- Bookings ----
-  async listBookings() {
-    return db.select().from(bookings).orderBy(desc(bookings.createdAt));
-  }
-  async createBooking(data: InsertBooking) {
-    const [row] = await db.insert(bookings).values(data).returning();
-    return row;
-  }
-  async updateBooking(id: string, data: Partial<Booking>) {
-    const [row] = await db.update(bookings).set(data).where(eq(bookings.id, id)).returning();
-    return row;
-  }
-  async deleteBooking(id: string) {
-    await db.delete(bookings).where(eq(bookings.id, id));
   }
 
   // ---- Site settings ----

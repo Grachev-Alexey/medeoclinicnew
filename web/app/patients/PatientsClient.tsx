@@ -109,7 +109,7 @@ export default function PatientsClient(): JSX.Element {
               <button
                 type="button"
                 onClick={() => go("/")}
-                className="hover:text-[#007d83] transition-colors"
+                className="hover:text-[#005eb8] transition-colors"
                 data-testid="link-breadcrumb-home"
               >
                 Главная
@@ -117,7 +117,7 @@ export default function PatientsClient(): JSX.Element {
               <ChevronRight className="h-3 w-3" />
               <span className="text-gray-600">Пациентам</span>
             </nav>
-            <p className="text-[10px] font-extrabold tracking-[0.22em] uppercase text-[#007d83] mb-3">
+            <p className="text-[10px] font-extrabold tracking-[0.22em] uppercase text-[#005eb8] mb-3">
               Пациентам
             </p>
             <h1 className="font-heading text-3xl lg:text-5xl text-[#0f1c2e] leading-[1.1] tracking-tight">
@@ -147,7 +147,7 @@ export default function PatientsClient(): JSX.Element {
                   <span className="absolute right-5 top-5 font-heading text-4xl font-bold text-gray-100 select-none">
                     {i + 1}
                   </span>
-                  <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-[#e8f6f6] text-[#007d83]">
+                  <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-[#e8f1fc] text-[#005eb8]">
                     <Icon className="h-5 w-5" />
                   </div>
                   <h3 className="mt-4 font-heading text-lg text-[#0f1c2e]">{step.title}</h3>
@@ -173,7 +173,7 @@ export default function PatientsClient(): JSX.Element {
                     className="flex gap-4 rounded-2xl border border-gray-100 bg-white p-6 shadow-sm"
                     data-testid={`card-info-${card.title}`}
                   >
-                    <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-[#e8f6f6] text-[#007d83]">
+                    <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-[#e8f1fc] text-[#005eb8]">
                       <Icon className="h-5 w-5" />
                     </div>
                     <div>
@@ -211,7 +211,7 @@ export default function PatientsClient(): JSX.Element {
                   >
                     <span className="text-[15px] font-medium text-[#0f1c2e]">{item.q}</span>
                     <ChevronDown
-                      className={`h-4 w-4 shrink-0 text-[#007d83] transition-transform duration-300 ${
+                      className={`h-4 w-4 shrink-0 text-[#005eb8] transition-transform duration-300 ${
                         isOpen ? "rotate-180" : ""
                       }`}
                     />
@@ -235,8 +235,8 @@ export default function PatientsClient(): JSX.Element {
 
         {/* CTA */}
         <section className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 pb-14">
-          <div className="rounded-3xl bg-[#e8f6f6] px-6 py-10 lg:px-12 lg:py-14 text-center">
-            <div className="inline-flex items-center gap-2 rounded-full bg-white px-4 py-1.5 text-xs font-medium text-[#007d83] mb-5">
+          <div className="rounded-3xl bg-[#e8f1fc] px-6 py-10 lg:px-12 lg:py-14 text-center">
+            <div className="inline-flex items-center gap-2 rounded-full bg-white px-4 py-1.5 text-xs font-medium text-[#005eb8] mb-5">
               <Clock className="h-3.5 w-3.5" /> Перезвоним в течение 15 минут
             </div>
             <h2 className="font-heading text-2xl lg:text-3xl text-[#0f1c2e]">
@@ -251,14 +251,14 @@ export default function PatientsClient(): JSX.Element {
                 type="button"
                 onClick={() => go("#contacts")}
                 data-testid="button-patients-book"
-                className="inline-flex items-center gap-2 rounded-full bg-[#007d83] px-7 py-3.5 text-sm font-semibold text-white transition-all hover:bg-[#006970] hover:shadow-lg"
+                className="inline-flex items-center gap-2 rounded-full bg-[#005eb8] px-7 py-3.5 text-sm font-semibold text-white transition-all hover:bg-[#004a93] hover:shadow-lg"
               >
                 Записаться на приём <ArrowRight className="h-4 w-4" />
               </button>
               <a
                 href={telHref}
                 data-testid="link-patients-phone"
-                className="inline-flex items-center gap-2 rounded-full border border-[#007d83]/30 bg-white px-7 py-3.5 text-sm font-semibold text-[#007d83] transition-all hover:border-[#007d83]"
+                className="inline-flex items-center gap-2 rounded-full border border-[#005eb8]/30 bg-white px-7 py-3.5 text-sm font-semibold text-[#005eb8] transition-all hover:border-[#005eb8]"
               >
                 <Phone className="h-4 w-4" /> {phone}
               </a>

@@ -1,6 +1,6 @@
 "use client";
 
-import { CatalogManager } from "@/pages/admin/CatalogManager";
+import { CatalogManager } from "@/reused-pages/admin/CatalogManager";
 
 export default function Page() {
   return <CatalogManager />;

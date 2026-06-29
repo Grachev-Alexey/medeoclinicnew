@@ -1,6 +1,6 @@
 "use client";
 
-import { SettingsManager } from "@/pages/admin/SettingsManager";
+import { SettingsManager } from "@/reused-pages/admin/SettingsManager";
 
 export default function Page() {
   return <SettingsManager />;

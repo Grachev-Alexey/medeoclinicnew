@@ -1,7 +1,7 @@
 "use client";
 
-import { CrudManager } from "@/pages/admin/CrudManager";
-import { entityConfigs } from "@/pages/admin/entityConfigs";
+import { CrudManager } from "@/reused-pages/admin/CrudManager";
+import { entityConfigs } from "@/reused-pages/admin/entityConfigs";
 
 export default function Page() {
   const c = entityConfigs.benefits;

@@ -6,12 +6,18 @@
 //
 // Build before first start:
 //   npm ci
+//   # Replay schema migrations (idempotent, safe to re-run) BEFORE starting:
+//   for f in deploy/sql/*.sql; do psql "$DATABASE_URL" -f "$f"; done
 //   npm run build        # builds the Express bundle (dist/index.cjs)
 //   npm run build:next   # builds Next standalone output in web/.next
 //
 // Start / manage:
 //   pm2 start deploy/ecosystem.config.cjs
 //   pm2 save && pm2 startup
+//
+// On every redeploy: git pull && npm ci, run the deploy/sql/*.sql migrations,
+// rebuild, then `pm2 reload deploy/ecosystem.config.cjs`. See replit.md
+// "Деплой на прод (рантбук)" for the full step list and post-migration spot check.
 //
 // Nginx terminates TLS (Certbot) and proxies 80/443 -> 127.0.0.1:3000.
 // Next then proxies /api/* -> 127.0.0.1:3001 (see web/next.config.mjs).

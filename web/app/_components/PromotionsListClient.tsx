@@ -7,7 +7,7 @@ import { SiteHeader } from "./SiteHeader";
 import { SiteFooter } from "./SiteFooter";
 import { SiteMobileNav } from "./SiteMobileNav";
 
-const ACCENT = "#007d83";
+const ACCENT = "#005eb8";
 
 const rgba = (hex: string, a: number) => {
   const r = parseInt(hex.slice(1, 3), 16);
@@ -109,14 +109,12 @@ export default function PromotionsListClient({ initialData }: Props): JSX.Elemen
                       )
                     )}
                     <div className="flex flex-1 flex-col p-6">
-                      {p.date && (
-                        <span
-                          className="mb-3 inline-flex w-fit items-center gap-1.5 rounded-full px-3 py-1 text-xs font-medium"
-                          style={{ backgroundColor: rgba(ACCENT, 0.08), color: ACCENT }}
-                        >
-                          <Clock className="h-3 w-3" /> {p.date}
-                        </span>
-                      )}
+                      <span
+                        className="mb-3 inline-flex w-fit items-center gap-1.5 rounded-full px-3 py-1 text-xs font-medium"
+                        style={{ backgroundColor: rgba(ACCENT, 0.08), color: ACCENT }}
+                      >
+                        <Clock className="h-3 w-3" /> Срок действия ограничен
+                      </span>
                       <h2 className="font-heading text-xl text-[#0f1c2e]">{p.title}</h2>
                       {p.description && (
                         <p className="mt-2 flex-1 text-sm font-light leading-relaxed text-[#6b7280]">

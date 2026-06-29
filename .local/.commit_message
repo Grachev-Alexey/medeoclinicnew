@@ -1,0 +1,30 @@
+Make services configurable & shareable across directions
+
+Task #1 (Build): services↔directions and service↔price-items are now
+many-to-many. A service is edited once and can appear under several
+directions; "сопутствующие услуги" on a service page are hand-picked
+price items; all procedures still auto-appear in the global price list +
+search.
+
+- shared/schema.ts: dropped services.directionId + priceCategoryId; added
+  serviceDirections + servicePriceItems join tables (composite PK).
+- server/storage.ts: join-table list/set methods; listServices(directionId?)
+  filters via join; added atomic createServiceWithRelations /
+  updateServiceWithRelations (wrap base row + link writes in a transaction).
+- server/routes.ts: directions/services endpoints return directions[] +
+  priceItems; new GET /api/admin/services (enriched directionIds/priceItemIds);
+  POST/PATCH accept directionIds[] + priceItemIds[]; search index updated.
+- Frontend: new admin ServicesManager + /admin/services page ("Услуги" nav);
+  DirectionsManager service editing removed (read-only); ServiceClient lost the
+  auto "related" block.
+
+Deviation from plan (architect review): "accent from current direction" is now
+implemented for real. Service links carry ?from=<directionSlug> (direction grid
++ header mega-menu); the service page reads it server-side via searchParams
+(NOT useSearchParams, to preserve SSR/SEO) and switches accent/breadcrumb to the
+current direction, falling back to the primary. Canonical breadcrumb JSON-LD
+stays on the primary direction.
+
+Migration deploy/sql/2026-06-configurable-services.sql written + applied to dev
+DB. Prod (separate VPS) still needs it (follow-up). Both typechecks pass;
+workflow restarted; API + pages smoke-tested.

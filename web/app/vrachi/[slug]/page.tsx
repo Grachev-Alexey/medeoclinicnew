@@ -3,7 +3,7 @@ import { notFound } from "next/navigation";
 import DoctorClient from "../../_components/DoctorClient";
 import { apiGet } from "../../lib/api";
 import { JsonLd } from "../../_components/JsonLd";
-import { breadcrumbLd, pageOpenGraph } from "../../lib/seo";
+import { breadcrumbLd, pageOpenGraph, pageKeywords } from "../../lib/seo";
 
 type Doctor = {
   id: string;
@@ -16,6 +16,12 @@ type Doctor = {
   quote: string;
   about: string;
   credentials: string[];
+  prodoctorovUrl: string;
+  prodoctorovRating: string;
+  prodoctorovReviews: string;
+  yandexUrl: string;
+  yandexRating: string;
+  yandexReviews: string;
   available: boolean;
   availableDate: string;
 };
@@ -41,6 +47,12 @@ export async function generateMetadata({
   return {
     title,
     description,
+    keywords: pageKeywords([
+      doctor.name,
+      doctor.specialty,
+      doctor.specialty ? `${doctor.specialty} Москва` : undefined,
+      "запись к врачу",
+    ]),
     alternates: { canonical: path },
     openGraph: pageOpenGraph({ title, description, path }),
   };
@@ -61,7 +73,7 @@ export default async function Page({ params }: { params: { slug: string } }) {
           ]),
         ]}
       />
-      <DoctorClient slug={params.slug} initialData={doctor as any} />
+      <DoctorClient slug={params.slug} initialData={doctor} />
     </>
   );
 }

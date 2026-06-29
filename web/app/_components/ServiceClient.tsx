@@ -26,13 +26,6 @@ type Direction = {
   imageUrl: string;
 };
 
-type RelatedService = {
-  id: string;
-  slug: string | null;
-  name: string;
-  shortDescription: string;
-};
-
 type PriceItem = {
   id: string;
   name: string;
@@ -49,8 +42,7 @@ type Service = {
   duration: string;
   imageUrl: string;
   direction: Direction;
-  related: RelatedService[];
-  priceCategory?: { id: string; name: string } | null;
+  directions?: Direction[];
   priceItems?: PriceItem[];
 };
 
@@ -60,13 +52,14 @@ type Settings = Record<string, any>;
 
 type Props = {
   slug: string;
+  from?: string;
   initialData?: Service;
   initialSettings?: Settings;
 };
 
-const DEFAULT_ACCENT = "#007d83";
+const DEFAULT_ACCENT = "#005eb8";
 
-export default function ServiceClient({ slug, initialData, initialSettings }: Props): JSX.Element | null {
+export default function ServiceClient({ slug, from, initialData, initialSettings }: Props): JSX.Element | null {
   const go = useGo();
   const { data } = useQuery<Service>({
     queryKey: ["/api/services", slug],
@@ -83,13 +76,15 @@ export default function ServiceClient({ slug, initialData, initialSettings }: Pr
 
   if (!data) return null;
 
-  const accent = data.direction?.accent || DEFAULT_ACCENT;
+  const dirs = data.directions ?? (data.direction ? [data.direction] : []);
+  const currentDir =
+    (from ? dirs.find((d) => d.slug === from) : undefined) || data.direction;
+  const accent = currentDir?.accent || DEFAULT_ACCENT;
   const heroImage =
-    data.imageUrl || data.direction?.heroImageUrl || data.direction?.imageUrl;
+    data.imageUrl || currentDir?.heroImageUrl || currentDir?.imageUrl;
   const phone = settings?.contacts?.phones?.[0] ?? "+7 (991) 300-95-05";
   const telHref = `tel:${phone.replace(/[^\d+]/g, "")}`;
   const paragraphs = (data.description || "").split(/\n{2,}/).filter(Boolean);
-  const related = (data.related || []).filter((s) => s.slug).slice(0, 3);
   const priceItems = data.priceItems || [];
   const priceItemsShown = priceItems.slice(0, PRICE_PREVIEW_LIMIT);
   const priceItemsHidden = priceItems.length - priceItemsShown.length;
@@ -111,13 +106,13 @@ export default function ServiceClient({ slug, initialData, initialSettings }: Pr
                 Главная
               </button>
               <ChevronRight className="h-3 w-3" />
-              {data.direction?.slug && (
+              {currentDir?.slug && (
                 <>
                   <Link
-                    href={directionPath(data.direction.slug)}
+                    href={directionPath(currentDir.slug)}
                     className="transition-colors hover:text-[#0f1c2e]"
                   >
-                    {data.direction.label}
+                    {currentDir.label}
                   </Link>
                   <ChevronRight className="h-3 w-3" />
                 </>
@@ -132,7 +127,7 @@ export default function ServiceClient({ slug, initialData, initialSettings }: Pr
                     className="inline-block rounded-full px-3 py-1 text-[11px] font-semibold uppercase tracking-wider"
                     style={{ backgroundColor: rgba(accent, 0.1), color: accent }}
                   >
-                    {data.direction.label}
+                    {currentDir.label}
                   </span>
                 )}
                 <h1 className="font-heading mt-5 text-3xl leading-[1.1] tracking-tight text-[#0f1c2e] lg:text-5xl">
@@ -255,41 +250,6 @@ export default function ServiceClient({ slug, initialData, initialSettings }: Pr
                   <ArrowRight className="h-4 w-4" />
                 </Link>
               )}
-            </div>
-          </section>
-        )}
-
-        {/* Related */}
-        {related.length > 0 && (
-          <section className="px-4 pb-12 sm:px-6 lg:px-8 lg:pb-16">
-            <div className="mx-auto max-w-7xl">
-              <h2 className="font-heading mb-8 text-2xl text-[#0f1c2e] lg:text-3xl">
-                Другие услуги направления
-              </h2>
-              <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-                {related.map((s) => (
-                  <Link
-                    key={s.id}
-                    href={`/uslugi/${s.slug}`}
-                    data-testid={`card-related-${s.slug}`}
-                    className="group flex flex-col rounded-2xl border border-gray-100 bg-white p-6 transition-all hover:-translate-y-0.5 hover:shadow-lg"
-                    style={{ boxShadow: "0 1px 4px rgba(0,0,0,0.04)" }}
-                  >
-                    <h3 className="font-heading text-lg text-[#0f1c2e]">{s.name}</h3>
-                    {s.shortDescription && (
-                      <p className="mt-2 flex-1 text-sm font-light leading-relaxed text-[#6b7280]">
-                        {s.shortDescription}
-                      </p>
-                    )}
-                    <span
-                      className="mt-4 inline-flex items-center gap-1.5 text-sm font-semibold transition-all group-hover:gap-2.5"
-                      style={{ color: accent }}
-                    >
-                      Подробнее <ArrowRight className="h-4 w-4" />
-                    </span>
-                  </Link>
-                ))}
-              </div>
             </div>
           </section>
         )}
