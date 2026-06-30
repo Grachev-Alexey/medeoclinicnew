@@ -1,0 +1,46 @@
+
+> rest-express@1.0.0 dev
+> node script/dev.mjs
+
+[1G[0K  [1m[38;2;173;127;168m▲ Next.js 14.2.35[39m[22m
+  - Local:        http://localhost:5000
+  - Network:      http://0.0.0.0:5000
+  - Experiments (use with caution):
+    · externalDir
+
+ [32m[1m✓[22m[39m Starting...
+8:08:40 PM [express] Прайс-каталог заполнен начальными данными
+8:08:40 PM [express] serving on port 3001
+ [32m[1m✓[22m[39m Ready in 1701ms
+ [37m[1m○[22m[39m Compiling / ...
+
+[1m[33mwarn[39m[22m - The class `duration-[1200ms]` is ambiguous and matches multiple utilities.
+[1m[33mwarn[39m[22m - If this is content and not a class, replace it with `duration-&lsqb;1200ms&rsqb;` to silence this warning.
+ [32m[1m✓[22m[39m Compiled / in 10.3s (1691 modules)
+8:08:52 PM [express] GET /api/settings 200 in 96ms :: {}
+8:08:52 PM [express] GET /api/doctors 200 in 93ms :: []
+8:08:52 PM [express] GET /api/nav-links 200 in 96ms :: []
+8:08:52 PM [express] GET /api/settings 200 in 117ms :: {}
+8:08:52 PM [express] GET /api/benefits 200 in 114ms :: []
+8:08:52 PM [express] GET /api/promotions 200 in 112ms :: []
+8:08:52 PM [express] GET /api/myths 200 in 110ms :: []
+8:08:52 PM [express] GET /api/doctors 200 in 118ms :: []
+8:08:52 PM [express] GET /api/stories 200 in 116ms :: []
+8:08:52 PM [express] GET /api/benefits 200 in 103ms :: []
+8:08:52 PM [express] GET /api/stories 200 in 103ms :: []
+8:08:52 PM [express] GET /api/nav-links 200 in 123ms :: []
+8:08:52 PM [express] GET /api/promotions 200 in 105ms :: []
+8:08:52 PM [express] GET /api/myths 200 in 104ms :: []
+8:08:52 PM [express] GET /api/directions 200 in 107ms :: []
+8:08:52 PM [express] GET /api/directions 200 in 120ms :: []
+ GET / [32m200[39m in 10785ms
+ GET / [32m200[39m in 9645ms
+8:09:09 PM [express] GET /api/nav-links 200 in 51ms :: []
+8:09:09 PM [express] GET /api/myths 200 in 46ms :: []
+8:09:09 PM [express] GET /api/settings 200 in 66ms :: {}
+8:09:09 PM [express] GET /api/doctors 200 in 66ms :: []
+8:09:09 PM [express] GET /api/stories 200 in 66ms :: []
+8:09:09 PM [express] GET /api/promotions 200 in 67ms :: []
+8:09:09 PM [express] GET /api/benefits 200 in 71ms :: []
+8:09:09 PM [express] GET /api/directions 200 in 71ms :: []
+ GET / [32m200[39m in 156ms

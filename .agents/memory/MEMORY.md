@@ -9,3 +9,4 @@
 - [Logo & favicon](logo-favicon.md) — BrandMark SVG is the single source; favicons rasterized from it (sharp needs NODE_PATH), opaque white bg so dark-theme tabs show the blue cross.
 - [Yandex maps routing](yandex-maps-routing.md) — routes need exact coords not text (iOS fails on text); rtext=lat,lon but ll/pt=lon,lat (order differs).
 - [SSR home-section wiring](ssr-home-section-wiring.md) — new DB-backed home block must sync 4 places (page.tsx fetch, HomeClient useQueries key, section useQuery same key) or it's client-only/empty in SSR HTML.
+- [Doctor-service join table](doctor-service-join.md) — doctor↔service M2M via `doctor_services`; serviceIds extracted from PATCH body server-side (not a doctor column); admin list enriches with serviceIds; public slug route returns full `services: [...]` array.

@@ -1,4 +1,7 @@
+"use client";
+
 import { ExternalLink } from "lucide-react";
+import { pauseLenis, resumeLenis } from "@/hooks/use-smooth-scroll";
 
 const YANDEX_ORG_ID = "226407459658";
 const YANDEX_ORG_URL = `https://yandex.ru/maps/org/medeo/${YANDEX_ORG_ID}/`;
@@ -37,6 +40,8 @@ export const ReviewsSection = (): JSX.Element => {
         {/* Yandex reviews widget */}
         <div
           data-lenis-prevent
+          onMouseEnter={pauseLenis}
+          onMouseLeave={resumeLenis}
           className="mx-auto max-w-3xl overflow-hidden rounded-xl border border-gray-100 bg-white shadow-sm"
         >
           <iframe

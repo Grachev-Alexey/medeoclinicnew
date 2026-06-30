@@ -29,6 +29,14 @@ export const entityConfigs: Record<string, EntityConfig> = {
       { name: "yandexRating", label: "Рейтинг на Яндексе", type: "text", placeholder: "4.8" },
       { name: "yandexReviews", label: "Кол-во отзывов на Яндексе", type: "text", placeholder: "92" },
       { name: "yandexUrl", label: "Ссылка на Яндекс (Карты/Отзывы)", type: "text", placeholder: "https://yandex.ru/maps/..." },
+      {
+        name: "serviceIds",
+        label: "Услуги врача",
+        type: "multiselect",
+        optionsPath: "/api/admin/services",
+        optionLabel: "name",
+        optionValue: "id",
+      },
       { name: "available", label: "Доступен для записи", type: "boolean" },
       { name: "availableDate", label: "Дата приёма", type: "text", placeholder: "сегодня / с 2 июня" },
       { name: "sortOrder", label: "Порядок", type: "number" },
@@ -155,33 +163,6 @@ export const entityConfigs: Record<string, EntityConfig> = {
       { name: "title", label: "Заголовок" },
       { name: "icon", label: "Иконка" },
       { name: "active", label: "Активно", type: "boolean" },
-    ],
-  },
-  "nav-links": {
-    title: "Меню навигации",
-    description: "Ссылки в шапке сайта",
-    path: "nav-links",
-    fields: [
-      { name: "label", label: "Название", type: "text" },
-      { name: "href", label: "Ссылка", type: "text", placeholder: "#services" },
-      {
-        name: "group",
-        label: "Группа",
-        type: "select",
-        options: [
-          { label: "Основное меню", value: "main" },
-          { label: "Доп. меню", value: "secondary" },
-        ],
-        defaultValue: "main",
-      },
-      { name: "sortOrder", label: "Порядок", type: "number" },
-      { name: "active", label: "Показывать", type: "boolean" },
-    ],
-    columns: [
-      { name: "label", label: "Название" },
-      { name: "href", label: "Ссылка" },
-      { name: "group", label: "Группа" },
-      { name: "active", label: "Активна", type: "boolean" },
     ],
   },
 };

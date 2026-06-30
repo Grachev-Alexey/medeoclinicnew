@@ -21,21 +21,91 @@ import {
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
-import type { PriceCategory, PriceItem } from "@shared/schema";
+import type { PriceCategory } from "@shared/schema";
+
+type PriceItemWithRelations = {
+  id: string;
+  categoryId: string;
+  name: string;
+  price: string;
+  note: string;
+  sortOrder: number;
+  directionIds: string[];
+  doctorIds: string[];
+};
+
+type Direction = { id: string; label: string };
+type Doctor = { id: string; name: string; specialty: string };
+
+function MultiSelect({
+  options,
+  selected,
+  onChange,
+  placeholder,
+  labelKey,
+}: {
+  options: { id: string; label: string }[];
+  selected: string[];
+  onChange: (ids: string[]) => void;
+  placeholder: string;
+  labelKey?: string;
+}) {
+  const toggle = (id: string) =>
+    onChange(selected.includes(id) ? selected.filter((s) => s !== id) : [...selected, id]);
+
+  return (
+    <div className="rounded-md border divide-y max-h-40 overflow-y-auto text-sm">
+      {options.length === 0 && (
+        <p className="px-3 py-2 text-gray-400">{placeholder}</p>
+      )}
+      {options.map((opt) => (
+        <label
+          key={opt.id}
+          className="flex items-center gap-2.5 px-3 py-2 cursor-pointer hover:bg-gray-50 select-none"
+        >
+          <input
+            type="checkbox"
+            checked={selected.includes(opt.id)}
+            onChange={() => toggle(opt.id)}
+            className="h-4 w-4 accent-[#005eb8]"
+          />
+          <span className="leading-tight">{opt.label}</span>
+        </label>
+      ))}
+    </div>
+  );
+}
 
 export function CatalogManager() {
   const { toast } = useToast();
   const catKey = ["/api/admin/price-categories"];
   const itemKey = ["/api/admin/price-items"];
   const { data: categories = [] } = useQuery<PriceCategory[]>({ queryKey: catKey });
-  const { data: items = [], isLoading } = useQuery<PriceItem[]>({ queryKey: itemKey });
+  const { data: items = [], isLoading } = useQuery<PriceItemWithRelations[]>({ queryKey: itemKey });
+  const { data: directions = [] } = useQuery<Direction[]>({
+    queryKey: ["/api/admin/directions"],
+    select: (data: any[]) => data.map((d) => ({ id: d.id, label: d.label })),
+  });
+  const { data: doctors = [] } = useQuery<Doctor[]>({
+    queryKey: ["/api/admin/doctors"],
+    select: (data: any[]) => data.map((d) => ({ id: d.id, name: d.name, specialty: d.specialty })),
+  });
 
   const [search, setSearch] = useState("");
   const [collapsed, setCollapsed] = useState<Record<string, boolean>>({});
   const [catDialog, setCatDialog] = useState(false);
   const [catForm, setCatForm] = useState<{ id?: string; name: string; sortOrder: number }>({ name: "", sortOrder: 0 });
   const [itemDialog, setItemDialog] = useState(false);
-  const [itemForm, setItemForm] = useState<any>({ name: "", price: "", note: "", categoryId: "", sortOrder: 0 });
+  const [itemForm, setItemForm] = useState<{
+    id?: string;
+    name: string;
+    price: string;
+    note: string;
+    categoryId: string;
+    sortOrder: number;
+    directionIds: string[];
+    doctorIds: string[];
+  }>({ name: "", price: "", note: "", categoryId: "", sortOrder: 0, directionIds: [], doctorIds: [] });
   const [saving, setSaving] = useState(false);
 
   const invalidate = () => {
@@ -45,7 +115,7 @@ export function CatalogManager() {
 
   const q = search.trim().toLowerCase();
   const itemsByCat = useMemo(() => {
-    const map: Record<string, PriceItem[]> = {};
+    const map: Record<string, PriceItemWithRelations[]> = {};
     for (const it of items) {
       if (q && !it.name.toLowerCase().includes(q) && !it.price.toLowerCase().includes(q)) continue;
       (map[it.categoryId] ||= []).push(it);
@@ -60,6 +130,9 @@ export function CatalogManager() {
   );
   const visibleCats = q ? sortedCats.filter((c) => (itemsByCat[c.id]?.length ?? 0) > 0) : sortedCats;
   const totalShown = Object.values(itemsByCat).reduce((a, l) => a + l.length, 0);
+
+  const directionMap = useMemo(() => Object.fromEntries(directions.map((d) => [d.id, d.label])), [directions]);
+  const doctorMap = useMemo(() => Object.fromEntries(doctors.map((d) => [d.id, d.name])), [doctors]);
 
   const saveCat = async () => {
     if (!catForm.name.trim()) return;
@@ -87,6 +160,8 @@ export function CatalogManager() {
         note: itemForm.note || "",
         categoryId: itemForm.categoryId,
         sortOrder: Number(itemForm.sortOrder) || 0,
+        directionIds: itemForm.directionIds,
+        doctorIds: itemForm.doctorIds,
       };
       if (itemForm.id) await apiRequest("PATCH", `/api/admin/price-items/${itemForm.id}`, payload);
       else await apiRequest("POST", "/api/admin/price-items", payload);
@@ -123,11 +198,20 @@ export function CatalogManager() {
   const openNewItem = (categoryId?: string) => {
     const catId = categoryId || categories[0]?.id || "";
     const count = items.filter((i) => i.categoryId === catId).length;
-    setItemForm({ name: "", price: "", note: "", categoryId: catId, sortOrder: count });
+    setItemForm({ name: "", price: "", note: "", categoryId: catId, sortOrder: count, directionIds: [], doctorIds: [] });
     setItemDialog(true);
   };
-  const openEditItem = (item: PriceItem) => {
-    setItemForm({ ...item });
+  const openEditItem = (item: PriceItemWithRelations) => {
+    setItemForm({
+      id: item.id,
+      name: item.name,
+      price: item.price,
+      note: item.note,
+      categoryId: item.categoryId,
+      sortOrder: item.sortOrder,
+      directionIds: item.directionIds ?? [],
+      doctorIds: item.doctorIds ?? [],
+    });
     setItemDialog(true);
   };
 
@@ -202,7 +286,7 @@ export function CatalogManager() {
                 </div>
                 {!isCollapsed && (
                   <div className="overflow-x-auto">
-                  <table className="w-full min-w-[480px] text-sm">
+                  <table className="w-full min-w-[560px] text-sm">
                     <tbody className="divide-y">
                       {catItems.map((item) => (
                         <tr key={item.id} data-testid={`price-item-${item.id}`}>
@@ -211,6 +295,20 @@ export function CatalogManager() {
                             {item.note && <span className="ml-2 text-xs text-gray-400">{item.note}</span>}
                           </td>
                           <td className="whitespace-nowrap px-4 py-2.5 text-right font-medium text-gray-900">{item.price}</td>
+                          <td className="px-4 py-2 max-w-[220px]">
+                            <div className="flex flex-wrap gap-1">
+                              {item.directionIds.map((dId) => directionMap[dId] && (
+                                <span key={dId} className="rounded-full bg-blue-50 px-2 py-0.5 text-[11px] font-medium text-blue-700">
+                                  {directionMap[dId]}
+                                </span>
+                              ))}
+                              {item.doctorIds.map((docId) => doctorMap[docId] && (
+                                <span key={docId} className="rounded-full bg-gray-100 px-2 py-0.5 text-[11px] text-gray-600">
+                                  {doctorMap[docId]}
+                                </span>
+                              ))}
+                            </div>
+                          </td>
                           <td className="w-20 px-4 py-2.5 text-right">
                             <div className="flex justify-end gap-1">
                               <Button size="icon" variant="ghost" onClick={() => openEditItem(item)} data-testid={`button-edit-item-${item.id}`}>
@@ -224,7 +322,7 @@ export function CatalogManager() {
                         </tr>
                       ))}
                       {catItems.length === 0 && (
-                        <tr><td className="px-4 py-4 text-center text-gray-400" colSpan={3}>Нет услуг в этой категории</td></tr>
+                        <tr><td className="px-4 py-4 text-center text-gray-400" colSpan={4}>Нет услуг в этой категории</td></tr>
                       )}
                     </tbody>
                   </table>
@@ -262,7 +360,7 @@ export function CatalogManager() {
       </Dialog>
 
       <Dialog open={itemDialog} onOpenChange={setItemDialog}>
-        <DialogContent className="sm:max-w-md">
+        <DialogContent className="sm:max-w-lg">
           <DialogHeader><DialogTitle>{itemForm.id ? "Редактировать услугу" : "Новая услуга"}</DialogTitle></DialogHeader>
           <div className="space-y-4 py-2">
             <div className="space-y-1.5">
@@ -293,6 +391,28 @@ export function CatalogManager() {
             <div className="space-y-1.5">
               <Label>Примечание (необязательно)</Label>
               <Input value={itemForm.note} onChange={(e) => setItemForm({ ...itemForm, note: e.target.value })} placeholder="Например: первичный приём" data-testid="input-item-note" />
+            </div>
+
+            <div className="space-y-1.5">
+              <Label>Направления</Label>
+              <p className="text-xs text-gray-400 mb-1">К каким направлениям клиники относится эта услуга</p>
+              <MultiSelect
+                options={directions}
+                selected={itemForm.directionIds}
+                onChange={(ids) => setItemForm({ ...itemForm, directionIds: ids })}
+                placeholder="Загрузка направлений…"
+              />
+            </div>
+
+            <div className="space-y-1.5">
+              <Label>Врачи</Label>
+              <p className="text-xs text-gray-400 mb-1">Кто из врачей проводит эту процедуру</p>
+              <MultiSelect
+                options={doctors.map((d) => ({ id: d.id, label: `${d.name}${d.specialty ? ` — ${d.specialty}` : ""}` }))}
+                selected={itemForm.doctorIds}
+                onChange={(ids) => setItemForm({ ...itemForm, doctorIds: ids })}
+                placeholder="Загрузка врачей…"
+              />
             </div>
           </div>
           <DialogFooter>

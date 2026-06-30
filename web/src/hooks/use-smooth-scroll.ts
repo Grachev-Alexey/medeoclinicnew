@@ -29,6 +29,14 @@ export function useSmoothScroll() {
   }, []);
 }
 
+export function pauseLenis() {
+  lenisInstance?.stop();
+}
+
+export function resumeLenis() {
+  lenisInstance?.start();
+}
+
 export function scrollTo(target: string | number | HTMLElement, offset = 0) {
   lenisInstance?.scrollTo(target, { duration: 1.2, offset });
 }

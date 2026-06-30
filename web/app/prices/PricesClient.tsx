@@ -318,20 +318,29 @@ export default function PricesClient({
                         key={item.id}
                         id={`item-${item.id}`}
                         data-testid={`row-price-${item.id}`}
-                        className={`flex items-baseline justify-between gap-4 px-5 sm:px-7 py-4 border-b border-gray-50 last:border-0 transition-colors scroll-mt-28 ${
+                        className={`flex items-center justify-between gap-3 px-5 sm:px-7 py-4 border-b border-gray-50 last:border-0 transition-colors scroll-mt-28 ${
                           highlightId === item.id
                             ? "bg-[#e8f1fc] ring-2 ring-inset ring-[#005eb8]/40"
                             : "hover:bg-gray-50/70"
                         }`}
                       >
-                        <div className="min-w-0">
+                        <div className="min-w-0 flex-1">
                           <p className="text-[14px] sm:text-[15px] text-[#1a2535]">{item.name}</p>
                           {item.note && (
                             <p className="text-xs text-gray-400 mt-0.5">{item.note}</p>
                           )}
                         </div>
-                        <div className="text-[14px] sm:text-[15px] font-semibold text-[#005eb8] whitespace-nowrap">
-                          {item.price}
+                        <div className="flex shrink-0 items-center gap-3">
+                          <span className="text-[14px] sm:text-[15px] font-semibold text-[#005eb8] whitespace-nowrap">
+                            {item.price}
+                          </span>
+                          <a
+                            href="#contacts"
+                            data-testid={`button-book-price-${item.id}`}
+                            className="hidden sm:inline-flex shrink-0 items-center rounded-full border border-[#005eb8]/30 px-3 py-1 text-[12px] font-semibold text-[#005eb8] transition-all hover:bg-[#005eb8] hover:text-white hover:border-[#005eb8]"
+                          >
+                            Записаться
+                          </a>
                         </div>
                       </li>
                     ))}

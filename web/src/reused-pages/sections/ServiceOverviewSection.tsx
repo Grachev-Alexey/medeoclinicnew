@@ -180,9 +180,10 @@ export const ServiceOverviewSection = (): JSX.Element | null => {
                       />
 
                       <ul className="flex flex-col">
-                        {cat.services.map((service, i) => {
+                        {cat.services.slice(0, 5).map((service, i) => {
+                          const shown = cat.services.slice(0, 5);
                           const rowStyle = {
-                            borderBottom: i < cat.services.length - 1
+                            borderBottom: i < shown.length - 1
                               ? `1px solid ${hex2rgba(accent, 0.1)}`
                               : "none",
                           };

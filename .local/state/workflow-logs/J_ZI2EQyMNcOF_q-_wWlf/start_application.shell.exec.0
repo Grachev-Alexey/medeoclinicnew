@@ -1,0 +1,14 @@
+[1G[0K⠙[1G[0K
+> rest-express@1.0.0 dev
+> node script/dev.mjs
+
+[1G[0K⠙[1G[0K  [1m[38;2;173;127;168m▲ Next.js 14.2.35[39m[22m
+  - Local:        http://localhost:5000
+  - Network:      http://0.0.0.0:5000
+  - Experiments (use with caution):
+    · externalDir
+
+ [32m[1m✓[22m[39m Starting...
+5:53:24 AM [express] serving on port 3001
+ [32m[1m✓[22m[39m Ready in 4.2s
+ [37m[1m○[22m[39m Compiling / ...

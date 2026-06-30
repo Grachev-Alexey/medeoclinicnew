@@ -152,20 +152,61 @@ export async function registerRoutes(
     });
   }
 
-  registerCrud({
-    path: "doctors",
-    schema: insertDoctorSchema,
-    list: (a) => storage.listDoctors(a),
-    create: (d) => storage.createDoctor(d),
-    update: (id, d) => storage.updateDoctor(id, d),
-    remove: (id) => storage.deleteDoctor(id),
+  // ---- Doctor CRUD (custom — handles serviceIds join table) ----
+  // Helper to enrich a list of doctors with their serviceIds
+  async function enrichDoctorsWithServiceIds(docs: any[]) {
+    const links = await storage.listAllDoctorServiceLinks();
+    const byDoctor = new Map<string, string[]>();
+    for (const l of links) {
+      const arr = byDoctor.get(l.doctorId) ?? [];
+      arr.push(l.serviceId);
+      byDoctor.set(l.doctorId, arr);
+    }
+    return docs.map((d) => ({ ...d, serviceIds: byDoctor.get(d.id) ?? [] }));
+  }
+
+  // Public list (active only) — no serviceIds needed
+  app.get("/api/doctors", async (_req, res) => {
+    res.json(await storage.listDoctors(true));
+  });
+  // Admin list (all) — include serviceIds for the edit form
+  app.get("/api/admin/doctors", requireAuth, async (_req, res) => {
+    const docs = await storage.listDoctors(false);
+    res.json(await enrichDoctorsWithServiceIds(docs));
+  });
+  app.post("/api/admin/doctors", requireAuth, async (req, res) => {
+    const { serviceIds, ...rest } = req.body as any;
+    const data = parseBody(insertDoctorSchema, rest, res);
+    if (!data) return;
+    const created = await storage.createDoctor(data);
+    if (Array.isArray(serviceIds)) await storage.setDoctorServices(created.id, serviceIds);
+    res.status(201).json({ ...created, serviceIds: serviceIds ?? [] });
+  });
+  app.patch("/api/admin/doctors/:id", requireAuth, async (req, res) => {
+    const { serviceIds, ...rest } = req.body as any;
+    const data = parseBody(insertDoctorSchema.partial(), rest, res);
+    if (!data) return;
+    const updated = await storage.updateDoctor(pid(req), data);
+    if (!updated) return res.status(404).json({ message: "Не найдено" });
+    if (Array.isArray(serviceIds)) await storage.setDoctorServices(updated.id, serviceIds);
+    const ids = Array.isArray(serviceIds)
+      ? serviceIds
+      : (await storage.listAllDoctorServiceLinks())
+          .filter((l) => l.doctorId === updated.id)
+          .map((l) => l.serviceId);
+    res.json({ ...updated, serviceIds: ids });
+  });
+  app.delete("/api/admin/doctors/:id", requireAuth, async (req, res) => {
+    await storage.deleteDoctor(pid(req));
+    res.json({ message: "ok" });
   });
 
-  // Public: single active doctor by slug (for /vrachi/[slug])
+  // Public: single active doctor by slug — include linked services
   app.get("/api/doctors/:slug", async (req, res) => {
     const doctor = await storage.getDoctorBySlug(pid(req, "slug"));
     if (!doctor || !doctor.active) return res.status(404).json({ message: "Не найдено" });
-    res.json(doctor);
+    const linkedServices = await storage.getDoctorServices(doctor.id);
+    res.json({ ...doctor, services: linkedServices });
   });
 
   registerCrud({
@@ -424,17 +465,27 @@ export async function registerRoutes(
   });
 
   app.get("/api/admin/price-items", requireAuth, async (_req, res) => {
-    res.json(await storage.listPriceItems());
+    res.json(await storage.listPriceItemsWithRelations());
   });
   app.post("/api/admin/price-items", requireAuth, async (req, res) => {
-    const data = parseBody(insertPriceItemSchema, req.body, res);
+    const { directionIds: _d, doctorIds: _doc, ...rest } = req.body;
+    const data = parseBody(insertPriceItemSchema, rest, res);
     if (!data) return;
-    res.status(201).json(await storage.createPriceItem(data));
+    const item = await storage.createPriceItem(data);
+    if (Array.isArray(_d)) await storage.setPriceItemDirections(item.id, _d);
+    if (Array.isArray(_doc)) await storage.setPriceItemDoctors(item.id, _doc);
+    res.status(201).json(item);
   });
   app.patch("/api/admin/price-items/:id", requireAuth, async (req, res) => {
-    const data = parseBody(insertPriceItemSchema.partial(), req.body, res);
+    const { directionIds, doctorIds, ...rest } = req.body;
+    const data = parseBody(insertPriceItemSchema.partial(), rest, res);
     if (!data) return;
-    const updated = await storage.updatePriceItem(pid(req), data);
+    const updated = await storage.updatePriceItemWithRelations(
+      pid(req),
+      data,
+      Array.isArray(directionIds) ? directionIds : [],
+      Array.isArray(doctorIds) ? doctorIds : [],
+    );
     if (!updated) return res.status(404).json({ message: "Не найдено" });
     res.json(updated);
   });

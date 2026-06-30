@@ -10,6 +10,7 @@ import {
   services,
   serviceDirections,
   servicePriceItems,
+  doctorServices,
   myths,
   promotions,
   stories,
@@ -345,25 +346,15 @@ async function seed() {
     console.log("• Каталог уже заполнен, пропускаю");
   }
 
-  /* ----------- Связь услуг с категориями каталога (идемпотентно) --------- */
-  // Услуга → категория прайса по специальности. Заполняем только там, где связь
-  // ещё не задана (curated-список, без ложных совпадений по подстроке).
+  /* ----------- Связь услуг с конкретными позициями прайса (идемпотентно) -- */
+  // Вместо bulk-линковки всех позиций категории — только точное совпадение
+  // по подстроке названия услуги, чтобы не тащить чужие процедуры.
   {
-    const SERVICE_CATEGORY_LINKS: Record<string, string> = {
-      "Гинекология": "Гинекология",
-      "Урология": "Урология и андрология",
-      "Андрология": "Урология и андрология",
-      "Чистка лица": "Косметология",
-      "Пилинги": "Косметология",
-      "Биоревитализация": "Косметология",
-      "Ботулинотерапия": "Косметология",
-      "Контурная пластика": "Косметология",
-      "Лазерные процедуры": "Косметология",
-      "УЗИ плода": "УЗИ-диагностика",
-      "УЗИ предстательной железы": "УЗИ-диагностика",
+    const SERVICE_NAME_FILTERS: Record<string, string[]> = {
+      "Гинекология": ["Первичный приём врача акушера-гинеколога", "Повторный приём врача акушера-гинеколога"],
+      "Урология":    ["Первичный приём врача уролога", "Повторный приём врача уролога"],
+      "Андрология":  ["Первичный приём врача уролога-андролога", "Повторный приём врача уролога-андролога"],
     };
-    const cats = await storage.listPriceCategories();
-    const catByName = new Map(cats.map((c) => [c.name, c.id] as const));
     const allItems = await storage.listPriceItems();
     const allServices = await db.select().from(services);
     const existingLinks = await storage.listServicePriceItems();
@@ -371,14 +362,16 @@ async function seed() {
     let linked = 0;
     for (const s of allServices) {
       if (linkedSvc.has(s.id)) continue;
-      const catId = catByName.get(SERVICE_CATEGORY_LINKS[s.name] ?? "");
-      if (!catId) continue;
-      const itemIds = allItems.filter((i) => i.categoryId === catId).map((i) => i.id);
+      const nameFilters = SERVICE_NAME_FILTERS[s.name];
+      if (!nameFilters) continue;
+      const itemIds = allItems
+        .filter((i) => nameFilters.some((f) => i.name.includes(f)))
+        .map((i) => i.id);
       if (itemIds.length === 0) continue;
       await storage.setServicePriceItems(s.id, itemIds);
       linked++;
     }
-    if (linked) console.log(`✓ Услуги связаны с процедурами каталога (${linked})`);
+    if (linked) console.log(`✓ Услуги связаны с позициями прайса (${linked})`);
   }
 
   /* ------- Сквозные услуги в нескольких направлениях (идемпотентно) ------ */
@@ -478,6 +471,44 @@ async function seed() {
       created++;
     }
     if (created) console.log(`✓ Разделы-специальности созданы (${created})`);
+  }
+
+  /* ---------------------- Doctor ↔ service links ------------------------- */
+  {
+    const existingLinks = await db.select().from(doctorServices);
+    if (existingLinks.length === 0) {
+      const svcBySlug = new Map(
+        (await db.select().from(services)).map((s) => [s.slug, s.id] as const),
+      );
+      const docBySlug = new Map(
+        (await db.select().from(doctors)).map((d) => [d.slug, d.id] as const),
+      );
+      const svc = (...slugs: string[]) =>
+        slugs.map((s) => svcBySlug.get(s)).filter((id): id is string => Boolean(id));
+
+      const DOCTOR_SERVICE_MAP: Record<string, string[]> = {
+        "gashimova-selminaz-kamilovna":      svc("urologiya", "andrologiya", "uzi-predstatelnoy-zhelezy"),
+        "nishanhozhaeva-elgiza-ikramhozhaevna": svc("uzi-ploda", "uzi-predstatelnoy-zhelezy"),
+        "nyanina-svetlana-aleksandrovna":    svc("vedenie-beremennosti", "ginekologiya", "uzi-ploda"),
+        "sorokina-svetlana-viktorovna":      svc("chistka-lica", "biorevitalizaciya", "botulinoterapiya", "konturnaya-plastika", "pilingi"),
+        "susenko-inna-valerevna":            svc("uzi-ploda", "uzi-predstatelnoy-zhelezy"),
+        "finogenova-tatyana-sergeevna":      svc("chistka-lica", "biorevitalizaciya", "botulinoterapiya", "lazernye-procedury"),
+        "cherkashin-vladimir-dmitrievich":   svc("uzi-predstatelnoy-zhelezy", "uzi-ploda"),
+      };
+
+      const rows: { doctorId: string; serviceId: string; sortOrder: number }[] = [];
+      for (const [docSlug, serviceIds] of Object.entries(DOCTOR_SERVICE_MAP)) {
+        const doctorId = docBySlug.get(docSlug);
+        if (!doctorId) continue;
+        serviceIds.forEach((serviceId, i) => rows.push({ doctorId, serviceId, sortOrder: i }));
+      }
+      if (rows.length > 0) {
+        await db.insert(doctorServices).values(rows);
+        console.log(`✓ Doctor-service links seeded (${rows.length})`);
+      }
+    } else {
+      console.log("• Doctor-service links already exist, skipping");
+    }
   }
 
   /* --------------------------- Site settings ----------------------------- */

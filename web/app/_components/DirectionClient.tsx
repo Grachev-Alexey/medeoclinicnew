@@ -348,9 +348,9 @@ export default function DirectionClient({ slug, initialData }: Props): JSX.Eleme
                           <li
                             key={it.id}
                             data-testid={`row-direction-price-${it.id}`}
-                            className="flex items-baseline justify-between gap-4 border-b border-gray-50 px-5 py-4 transition-colors last:border-0 hover:bg-gray-50/70 sm:px-7"
+                            className="flex items-center justify-between gap-3 border-b border-gray-50 px-5 py-4 transition-colors last:border-0 hover:bg-gray-50/70 sm:px-7"
                           >
-                            <div className="min-w-0">
+                            <div className="min-w-0 flex-1">
                               <p className="text-[14px] text-[#1a2535] sm:text-[15px]">
                                 {it.name}
                               </p>
@@ -358,11 +358,32 @@ export default function DirectionClient({ slug, initialData }: Props): JSX.Eleme
                                 <p className="mt-0.5 text-xs text-gray-400">{it.note}</p>
                               )}
                             </div>
-                            <div
-                              className="whitespace-nowrap text-[14px] font-semibold sm:text-[15px]"
-                              style={{ color: accent }}
-                            >
-                              {it.price}
+                            <div className="flex shrink-0 items-center gap-3">
+                              <span
+                                className="whitespace-nowrap text-[14px] font-semibold sm:text-[15px]"
+                                style={{ color: accent }}
+                              >
+                                {it.price}
+                              </span>
+                              <a
+                                href="#contacts"
+                                data-testid={`button-book-proc-${it.id}`}
+                                className="hidden sm:inline-flex shrink-0 items-center rounded-full border px-3 py-1 text-[12px] font-semibold transition-all hover:text-white"
+                                style={{
+                                  borderColor: `${accent}4d`,
+                                  color: accent,
+                                }}
+                                onMouseEnter={(e) => {
+                                  (e.currentTarget as HTMLElement).style.backgroundColor = accent;
+                                  (e.currentTarget as HTMLElement).style.color = "#fff";
+                                }}
+                                onMouseLeave={(e) => {
+                                  (e.currentTarget as HTMLElement).style.backgroundColor = "";
+                                  (e.currentTarget as HTMLElement).style.color = accent;
+                                }}
+                              >
+                                Записаться
+                              </a>
                             </div>
                           </li>
                         ))}

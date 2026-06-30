@@ -239,7 +239,7 @@ export const HeroWelcomeSection = (): JSX.Element | null => {
         </div>
 
         {/* Thumbnail navigation */}
-        <div ref={thumbStripRef} className="no-scrollbar mt-6 flex scroll-px-4 gap-2.5 overflow-x-auto scroll-smooth pb-1 lg:mt-8" data-testid="doctor-thumbnails">
+        <div ref={thumbStripRef} className="no-scrollbar mt-6 flex scroll-px-4 gap-2.5 overflow-x-auto scroll-smooth px-0.5 py-1.5 lg:mt-8" data-testid="doctor-thumbnails">
           {doctors.map((d, i) => {
             const isActive = i === safeIndex;
             return (
@@ -251,18 +251,20 @@ export const HeroWelcomeSection = (): JSX.Element | null => {
                 aria-label={`Показать врача: ${d.name}`}
                 aria-pressed={isActive}
                 data-testid={`thumb-doctor-${i}`}
-                className={`relative aspect-[4/5] w-16 shrink-0 overflow-hidden rounded-2xl ring-2 transition-all sm:w-[4.5rem] ${
+                className={`relative aspect-[4/5] w-16 shrink-0 rounded-2xl ring-2 transition-all sm:w-[4.5rem] ${
                   isActive
                     ? "ring-[#005eb8]"
                     : "opacity-60 ring-transparent hover:opacity-100"
                 }`}
               >
-                <img
-                  src={d.imageUrl}
-                  alt={d.name}
-                  loading="lazy"
-                  className="h-full w-full object-cover object-[center_15%]"
-                />
+                <div className="h-full w-full overflow-hidden rounded-[calc(1rem-2px)]">
+                  <img
+                    src={d.imageUrl}
+                    alt={d.name}
+                    loading="lazy"
+                    className="h-full w-full object-cover object-[center_15%]"
+                  />
+                </div>
               </button>
             );
           })}

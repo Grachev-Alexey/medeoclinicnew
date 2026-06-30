@@ -31,7 +31,6 @@ const navItems = [
   { href: "/admin/promotions", label: "Акции", icon: BadgePercent },
   { href: "/admin/stories", label: "Истории клиники", icon: BookHeart },
   { href: "/admin/benefits", label: "Преимущества", icon: ShieldCheck },
-  { href: "/admin/nav-links", label: "Меню", icon: MenuIcon },
   { href: "/admin/settings", label: "Настройки", icon: Settings },
 ];
 

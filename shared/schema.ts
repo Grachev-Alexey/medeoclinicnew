@@ -237,6 +237,38 @@ export type InsertServicePriceItem = z.infer<typeof insertServicePriceItemSchema
 export type ServicePriceItem = typeof servicePriceItems.$inferSelect;
 
 /* -------------------------------------------------------------------------- */
+/*  Price item ↔ Direction / Doctor (many-to-many)                            */
+/*  Allows tagging each price-list row with the directions and doctors that    */
+/*  perform it — edited in a single admin dialog.                              */
+/* -------------------------------------------------------------------------- */
+
+export const priceItemDirections = pgTable(
+  "price_item_directions",
+  {
+    priceItemId: varchar("price_item_id")
+      .notNull()
+      .references(() => priceItems.id, { onDelete: "cascade" }),
+    directionId: varchar("direction_id")
+      .notNull()
+      .references(() => directions.id, { onDelete: "cascade" }),
+  },
+  (t) => ({ pk: primaryKey({ columns: [t.priceItemId, t.directionId] }) }),
+);
+
+export const priceItemDoctors = pgTable(
+  "price_item_doctors",
+  {
+    priceItemId: varchar("price_item_id")
+      .notNull()
+      .references(() => priceItems.id, { onDelete: "cascade" }),
+    doctorId: varchar("doctor_id")
+      .notNull()
+      .references(() => doctors.id, { onDelete: "cascade" }),
+  },
+  (t) => ({ pk: primaryKey({ columns: [t.priceItemId, t.doctorId] }) }),
+);
+
+/* -------------------------------------------------------------------------- */
 /*  Myths (MythBuster section)                                                 */
 /* -------------------------------------------------------------------------- */
 
@@ -309,6 +341,27 @@ export const insertStorySchema = createInsertSchema(stories).omit({
 });
 export type InsertStory = z.infer<typeof insertStorySchema>;
 export type Story = typeof stories.$inferSelect;
+
+/* -------------------------------------------------------------------------- */
+/*  Doctor ↔ Service (many-to-many)                                           */
+/* -------------------------------------------------------------------------- */
+
+export const doctorServices = pgTable(
+  "doctor_services",
+  {
+    doctorId: varchar("doctor_id")
+      .notNull()
+      .references(() => doctors.id, { onDelete: "cascade" }),
+    serviceId: varchar("service_id")
+      .notNull()
+      .references(() => services.id, { onDelete: "cascade" }),
+    sortOrder: integer("sort_order").default(0).notNull(),
+  },
+  (t) => ({ pk: primaryKey({ columns: [t.doctorId, t.serviceId] }) }),
+);
+
+export const insertDoctorServiceSchema = createInsertSchema(doctorServices);
+export type DoctorService = typeof doctorServices.$inferSelect;
 
 /* -------------------------------------------------------------------------- */
 /*  Benefits                                                                   */

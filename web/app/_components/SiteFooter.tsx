@@ -66,7 +66,7 @@ export const SiteFooter = (): JSX.Element => {
   const brandTagline = settings?.branding?.tagline ?? "МЕДИЦИНСКИЙ ЦЕНТР";
 
   return (
-    <footer className="bg-white border-t border-gray-100">
+    <footer id="contacts" className="bg-white border-t border-gray-100">
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-12 lg:py-16">
         <div className="grid gap-10 md:grid-cols-2 lg:grid-cols-4">
 

@@ -231,12 +231,30 @@ export default function ServiceClient({ slug, from, initialData, initialSettings
                   <div
                     key={item.id}
                     data-testid={`row-price-${item.id}`}
-                    className={`flex items-baseline justify-between gap-4 px-5 py-3.5 ${
+                    className={`flex items-center justify-between gap-3 px-5 py-3.5 ${
                       i % 2 === 1 ? "bg-gray-50/60" : ""
                     }`}
                   >
-                    <span className="text-sm leading-snug text-[#3f4d59]">{item.name}</span>
-                    <span className="shrink-0 text-sm font-semibold text-[#0f1c2e]">{item.price}</span>
+                    <span className="flex-1 min-w-0 text-sm leading-snug text-[#3f4d59]">{item.name}</span>
+                    <div className="flex shrink-0 items-center gap-3">
+                      <span className="text-sm font-semibold text-[#0f1c2e]">{item.price}</span>
+                      <a
+                        href="#contacts"
+                        data-testid={`button-book-price-${item.id}`}
+                        className="hidden sm:inline-flex shrink-0 items-center rounded-full border px-3 py-1 text-[12px] font-semibold transition-all hover:text-white"
+                        style={{ borderColor: `${accent}4d`, color: accent }}
+                        onMouseEnter={(e) => {
+                          (e.currentTarget as HTMLElement).style.backgroundColor = accent;
+                          (e.currentTarget as HTMLElement).style.color = "#fff";
+                        }}
+                        onMouseLeave={(e) => {
+                          (e.currentTarget as HTMLElement).style.backgroundColor = "";
+                          (e.currentTarget as HTMLElement).style.color = accent;
+                        }}
+                      >
+                        Записаться
+                      </a>
+                    </div>
                   </div>
                 ))}
               </div>

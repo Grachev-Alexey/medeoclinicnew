@@ -1,14 +1,22 @@
 "use client";
 
+import { useState } from "react";
 import Link from "next/link";
 import { useQuery } from "@tanstack/react-query";
-import { ArrowLeft, ArrowRight, ShieldCheck, Stethoscope } from "lucide-react";
+import { ArrowLeft, ArrowRight, ShieldCheck, Stethoscope, Search } from "lucide-react";
 import { SiteHeader } from "./SiteHeader";
 import { SiteFooter } from "./SiteFooter";
 import { SiteMobileNav } from "./SiteMobileNav";
 import { DoctorRatings } from "@/reused-pages/sections/DoctorRatings";
 
 const ACCENT = "#005eb8";
+
+type ServiceItem = {
+  id: string;
+  slug: string;
+  name: string;
+  shortDescription?: string;
+};
 
 type Doctor = {
   id: string;
@@ -28,6 +36,7 @@ type Doctor = {
   yandexReviews: string;
   available: boolean;
   availableDate: string;
+  services?: ServiceItem[];
 };
 
 type Props = {
@@ -41,9 +50,18 @@ export default function DoctorClient({ slug, initialData }: Props): JSX.Element 
     initialData,
   });
 
+  const [search, setSearch] = useState("");
+
   if (!doctor) return <></>;
 
   const credentials = (doctor.credentials || []).filter(Boolean);
+  const allServices = doctor.services ?? [];
+  const filtered = search.trim()
+    ? allServices.filter((s) =>
+        s.name.toLowerCase().includes(search.toLowerCase()) ||
+        (s.shortDescription ?? "").toLowerCase().includes(search.toLowerCase()),
+      )
+    : allServices;
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -148,6 +166,69 @@ export default function DoctorClient({ slug, initialData }: Props): JSX.Element 
               </div>
             </div>
           </div>
+
+          {/* Services section */}
+          {allServices.length > 0 && (
+            <section className="mt-12" data-testid="section-doctor-services">
+              <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+                <div>
+                  <h2 className="text-xl font-semibold text-[#0f1c2e] sm:text-2xl">Услуги врача</h2>
+                  <p className="mt-1 text-sm text-gray-500">
+                    {allServices.length === 1
+                      ? "1 услуга"
+                      : allServices.length < 5
+                      ? `${allServices.length} услуги`
+                      : `${allServices.length} услуг`}
+                  </p>
+                </div>
+                {allServices.length > 4 && (
+                  <div className="relative w-full sm:w-64">
+                    <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
+                    <input
+                      type="text"
+                      value={search}
+                      onChange={(e) => setSearch(e.target.value)}
+                      placeholder="Поиск услуги…"
+                      className="w-full rounded-full border border-gray-200 bg-white py-2.5 pl-9 pr-4 text-sm text-gray-800 placeholder-gray-400 outline-none ring-[#005eb8]/30 transition focus:border-[#005eb8] focus:ring-2"
+                      data-testid="input-service-search"
+                    />
+                  </div>
+                )}
+              </div>
+
+              {filtered.length === 0 ? (
+                <p className="py-8 text-center text-sm text-gray-400" data-testid="text-services-empty">
+                  Ничего не найдено
+                </p>
+              ) : (
+                <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3" data-testid="grid-doctor-services">
+                  {filtered.map((svc) => (
+                    <Link
+                      key={svc.id}
+                      href={`/uslugi/${svc.slug}`}
+                      className="group flex items-start gap-3 rounded-2xl border border-gray-100 bg-white p-5 shadow-sm ring-1 ring-transparent transition hover:border-[#005eb8]/20 hover:ring-[#005eb8]/10 hover:shadow-md"
+                      data-testid={`card-service-${svc.id}`}
+                    >
+                      <span
+                        className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-full"
+                        style={{ backgroundColor: "#eaf3fc" }}
+                      >
+                        <Stethoscope className="h-4 w-4" style={{ color: ACCENT }} />
+                      </span>
+                      <div className="min-w-0">
+                        <p className="text-sm font-medium text-[#0f1c2e] group-hover:text-[#005eb8] transition-colors line-clamp-2">
+                          {svc.name}
+                        </p>
+                        {svc.shortDescription ? (
+                          <p className="mt-1 text-xs text-gray-500 line-clamp-2">{svc.shortDescription}</p>
+                        ) : null}
+                      </div>
+                    </Link>
+                  ))}
+                </div>
+              )}
+            </section>
+          )}
         </div>
       </main>
       <SiteFooter />

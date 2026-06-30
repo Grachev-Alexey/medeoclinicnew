@@ -8,8 +8,11 @@ import {
   services,
   serviceDirections,
   servicePriceItems,
+  doctorServices,
   priceCategories,
   priceItems,
+  priceItemDirections,
+  priceItemDoctors,
   myths,
   promotions,
   stories,
@@ -84,6 +87,10 @@ export interface IStorage {
   createDoctor(data: InsertDoctor): Promise<Doctor>;
   updateDoctor(id: string, data: Partial<InsertDoctor>): Promise<Doctor | undefined>;
   deleteDoctor(id: string): Promise<void>;
+  // Doctor ↔ service links
+  getDoctorServices(doctorId: string): Promise<Service[]>;
+  setDoctorServices(doctorId: string, serviceIds: string[]): Promise<void>;
+  listAllDoctorServiceLinks(): Promise<{ doctorId: string; serviceId: string }[]>;
 
   // Directions + services
   listDirections(onlyActive?: boolean): Promise<Direction[]>;
@@ -120,9 +127,13 @@ export interface IStorage {
   updatePriceCategory(id: string, data: Partial<InsertPriceCategory>): Promise<PriceCategory | undefined>;
   deletePriceCategory(id: string): Promise<void>;
   listPriceItems(categoryId?: string): Promise<PriceItem[]>;
+  listPriceItemsWithRelations(): Promise<(PriceItem & { directionIds: string[]; doctorIds: string[] })[]>;
   createPriceItem(data: InsertPriceItem): Promise<PriceItem>;
   updatePriceItem(id: string, data: Partial<InsertPriceItem>): Promise<PriceItem | undefined>;
+  updatePriceItemWithRelations(id: string, data: Partial<InsertPriceItem>, directionIds: string[], doctorIds: string[]): Promise<PriceItem | undefined>;
   deletePriceItem(id: string): Promise<void>;
+  setPriceItemDirections(priceItemId: string, directionIds: string[]): Promise<void>;
+  setPriceItemDoctors(priceItemId: string, doctorIds: string[]): Promise<void>;
 
   // Myths
   listMyths(onlyActive?: boolean): Promise<Myth[]>;
@@ -241,6 +252,29 @@ export class DbStorage implements IStorage {
   }
   async deleteDoctor(id: string) {
     await db.delete(doctors).where(eq(doctors.id, id));
+  }
+  async getDoctorServices(doctorId: string): Promise<Service[]> {
+    const links = await db
+      .select()
+      .from(doctorServices)
+      .where(eq(doctorServices.doctorId, doctorId))
+      .orderBy(asc(doctorServices.sortOrder));
+    if (links.length === 0) return [];
+    const ids = new Set(links.map((l) => l.serviceId));
+    const all = await db.select().from(services).orderBy(asc(services.sortOrder));
+    return all.filter((s) => ids.has(s.id));
+  }
+  async setDoctorServices(doctorId: string, serviceIds: string[]): Promise<void> {
+    await db.delete(doctorServices).where(eq(doctorServices.doctorId, doctorId));
+    const unique = Array.from(new Set(serviceIds.filter(Boolean)));
+    if (unique.length === 0) return;
+    await db.insert(doctorServices).values(
+      unique.map((serviceId, i) => ({ doctorId, serviceId, sortOrder: i })),
+    );
+  }
+  async listAllDoctorServiceLinks() {
+    const rows = await db.select().from(doctorServices);
+    return rows.map((r) => ({ doctorId: r.doctorId, serviceId: r.serviceId }));
   }
 
   // ---- Directions + Services ----
@@ -376,12 +410,50 @@ export class DbStorage implements IStorage {
     const rows = await db.select().from(priceItems).orderBy(asc(priceItems.sortOrder));
     return categoryId ? rows.filter((r) => r.categoryId === categoryId) : rows;
   }
+  async listPriceItemsWithRelations() {
+    const rows = await db.select().from(priceItems).orderBy(asc(priceItems.sortOrder));
+    const dirs = await db.select().from(priceItemDirections);
+    const docs = await db.select().from(priceItemDoctors);
+    return rows.map((r) => ({
+      ...r,
+      directionIds: dirs.filter((d) => d.priceItemId === r.id).map((d) => d.directionId),
+      doctorIds: docs.filter((d) => d.priceItemId === r.id).map((d) => d.doctorId),
+    }));
+  }
+  async setPriceItemDirections(priceItemId: string, directionIds: string[]) {
+    await db.delete(priceItemDirections).where(eq(priceItemDirections.priceItemId, priceItemId));
+    const unique = Array.from(new Set(directionIds.filter(Boolean)));
+    if (unique.length > 0) {
+      await db.insert(priceItemDirections).values(unique.map((directionId) => ({ priceItemId, directionId })));
+    }
+  }
+  async setPriceItemDoctors(priceItemId: string, doctorIds: string[]) {
+    await db.delete(priceItemDoctors).where(eq(priceItemDoctors.priceItemId, priceItemId));
+    const unique = Array.from(new Set(doctorIds.filter(Boolean)));
+    if (unique.length > 0) {
+      await db.insert(priceItemDoctors).values(unique.map((doctorId) => ({ priceItemId, doctorId })));
+    }
+  }
   async createPriceItem(data: InsertPriceItem) {
     const [row] = await db.insert(priceItems).values(data).returning();
     return row;
   }
   async updatePriceItem(id: string, data: Partial<InsertPriceItem>) {
     const [row] = await db.update(priceItems).set(data).where(eq(priceItems.id, id)).returning();
+    return row;
+  }
+  async updatePriceItemWithRelations(id: string, data: Partial<InsertPriceItem>, directionIds: string[], doctorIds: string[]) {
+    let row: PriceItem | undefined;
+    if (Object.keys(data).length > 0) {
+      const [updated] = await db.update(priceItems).set(data).where(eq(priceItems.id, id)).returning();
+      row = updated;
+    } else {
+      const [existing] = await db.select().from(priceItems).where(eq(priceItems.id, id));
+      row = existing;
+    }
+    if (!row) return undefined;
+    await this.setPriceItemDirections(id, directionIds);
+    await this.setPriceItemDoctors(id, doctorIds);
     return row;
   }
   async deletePriceItem(id: string) {
